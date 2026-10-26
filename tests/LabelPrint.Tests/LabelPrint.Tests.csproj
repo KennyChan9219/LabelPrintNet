@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>LabelPrint.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\LabelPrint.Core\LabelPrint.Core.csproj" />
+    <ProjectReference Include="..\..\src\LabelPrint.Data\LabelPrint.Data.csproj" />
+    <ProjectReference Include="..\..\src\LabelPrint.Printing\LabelPrint.Printing.csproj" />
+    <ProjectReference Include="..\..\src\LabelPrint.CardReader\LabelPrint.CardReader.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\LabelPrint.App\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\config\appsettings.Local.sample.json" Link="appsettings.Local.sample.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\config\CardReader.config" Link="CardReader.config" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\templates\*.lbl" Link="templates\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

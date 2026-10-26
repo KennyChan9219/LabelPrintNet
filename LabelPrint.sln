@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8C722600-DBAC-422E-AA26-BA710C7A14D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LabelPrint.Core", "src\LabelPrint.Core\LabelPrint.Core.csproj", "{5689040B-6385-421E-A15E-108520980304}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LabelPrint.Data", "src\LabelPrint.Data\LabelPrint.Data.csproj", "{FD77C79F-B0A6-47C7-850E-2B9C1EA39B1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LabelPrint.Printing", "src\LabelPrint.Printing\LabelPrint.Printing.csproj", "{BC0C9B48-D4EE-4251-BEA0-6A0995C58A96}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LabelPrint.CardReader", "src\LabelPrint.CardReader\LabelPrint.CardReader.csproj", "{6D377B94-59CB-4AFB-888C-C1E9AB05AF32}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LabelPrint.App", "src\LabelPrint.App\LabelPrint.App.csproj", "{6A970A01-1B7F-4B9B-BBCC-07F2468D83A8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{7D76686B-5AC2-4E18-8B15-F9F60D18EBED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LabelPrint.Tests", "tests\LabelPrint.Tests\LabelPrint.Tests.csproj", "{D79288D8-42CF-4D77-8447-9300BF38E974}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5689040B-6385-421E-A15E-108520980304}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5689040B-6385-421E-A15E-108520980304}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5689040B-6385-421E-A15E-108520980304}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5689040B-6385-421E-A15E-108520980304}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD77C79F-B0A6-47C7-850E-2B9C1EA39B1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD77C79F-B0A6-47C7-850E-2B9C1EA39B1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD77C79F-B0A6-47C7-850E-2B9C1EA39B1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD77C79F-B0A6-47C7-850E-2B9C1EA39B1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC0C9B48-D4EE-4251-BEA0-6A0995C58A96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC0C9B48-D4EE-4251-BEA0-6A0995C58A96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC0C9B48-D4EE-4251-BEA0-6A0995C58A96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC0C9B48-D4EE-4251-BEA0-6A0995C58A96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D377B94-59CB-4AFB-888C-C1E9AB05AF32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D377B94-59CB-4AFB-888C-C1E9AB05AF32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D377B94-59CB-4AFB-888C-C1E9AB05AF32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D377B94-59CB-4AFB-888C-C1E9AB05AF32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A970A01-1B7F-4B9B-BBCC-07F2468D83A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A970A01-1B7F-4B9B-BBCC-07F2468D83A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A970A01-1B7F-4B9B-BBCC-07F2468D83A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A970A01-1B7F-4B9B-BBCC-07F2468D83A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D79288D8-42CF-4D77-8447-9300BF38E974}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D79288D8-42CF-4D77-8447-9300BF38E974}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D79288D8-42CF-4D77-8447-9300BF38E974}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D79288D8-42CF-4D77-8447-9300BF38E974}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5689040B-6385-421E-A15E-108520980304} = {8C722600-DBAC-422E-AA26-BA710C7A14D2}
+		{FD77C79F-B0A6-47C7-850E-2B9C1EA39B1C} = {8C722600-DBAC-422E-AA26-BA710C7A14D2}
+		{BC0C9B48-D4EE-4251-BEA0-6A0995C58A96} = {8C722600-DBAC-422E-AA26-BA710C7A14D2}
+		{6D377B94-59CB-4AFB-888C-C1E9AB05AF32} = {8C722600-DBAC-422E-AA26-BA710C7A14D2}
+		{6A970A01-1B7F-4B9B-BBCC-07F2468D83A8} = {8C722600-DBAC-422E-AA26-BA710C7A14D2}
+		{D79288D8-42CF-4D77-8447-9300BF38E974} = {7D76686B-5AC2-4E18-8B15-F9F60D18EBED}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>LabelPrint.Printing</RootNamespace>
+    <AssemblyName>LabelPrint.Printing</AssemblyName>
+    <Description>Label template loading and the nameplate print pipeline.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LabelPrint.Core\LabelPrint.Core.csproj" />
+  </ItemGroup>
+</Project>
