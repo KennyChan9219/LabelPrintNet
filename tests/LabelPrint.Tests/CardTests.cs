@@ -78,7 +78,7 @@ public class CardTests
             Password=super-secret
             """));
 
-        Assert.Contains("must not contain a password", error.Message);
+        Assert.Contains("不可包含密碼", error.Message);
         Assert.DoesNotContain("super-secret", error.Message);
     }
 

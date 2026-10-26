@@ -18,7 +18,7 @@ public sealed class MtUserRepository : IMtUserRepository
         var rows = await QueryAsync(MtUserQueries.FindByStaffNumber(_options.Value.MtUser, staffNo), cancellationToken)
             .ConfigureAwait(false);
         if (rows.Count > 1)
-            throw new InvalidOperationException($"More than one MT_USER row matches staff number {staffNo.Trim()}.");
+            throw new InvalidOperationException($"多於一筆 MT_USER 記錄符合員工編號 {staffNo.Trim()}。");
         return rows.Count == 0 ? null : rows[0];
     }
 

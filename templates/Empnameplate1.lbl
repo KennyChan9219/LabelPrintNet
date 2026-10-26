@@ -1,7 +1,7 @@
 ; Employee badge. Edit positions in millimetres. This text format is the maintained layout.
 ; A legacy binary .lbl dropped beside the exe is detected and reported until it can be decoded.
 Format=LabelPrint.TextLayout.v1
-Name=Employee nameplate 1
+Name=員工名牌 1
 WidthMm=75
 HeightMm=40
 Copies=1

@@ -13,7 +13,7 @@ public static partial class Sql
         if (string.IsNullOrWhiteSpace(identifier) || !Identifier().IsMatch(identifier))
         {
             throw new InvalidOperationException(
-                $"The configured SQL name for {role} must be a single letter-or-underscore identifier.");
+                $"{role} 的 SQL 名稱必須是單一英文字母或底線開頭的識別碼。");
         }
 
         return "[" + identifier + "]";
@@ -25,7 +25,7 @@ public static partial class Sql
         if (parts.Length is < 1 or > 2)
         {
             throw new InvalidOperationException(
-                $"The configured SQL name for {role} must be one identifier, or schema.table.");
+                $"{role} 的 SQL 名稱必須是單一識別碼，或 schema.table。");
         }
 
         return string.Join(".", parts.Select(part => Bracket(part, role)));

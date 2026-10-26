@@ -69,16 +69,16 @@ public static class CardCodec
     public static void ValidateWindow(CardType type, int offset, int length)
     {
         if (offset < 0)
-            throw new ArgumentOutOfRangeException(nameof(offset), "Card offset cannot be negative.");
+            throw new ArgumentOutOfRangeException(nameof(offset), "卡片偏移不可為負數。");
         if (length <= 0)
-            throw new ArgumentOutOfRangeException(nameof(length), "Card length must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(length), "卡片長度必須大於 0。");
 
         var capacity = Capacity(type);
         if (offset > capacity || length > capacity - offset)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(length),
-                $"Card window {offset}+{length} is outside {type} main memory ({capacity} bytes).");
+                $"卡片範圍 {offset}+{length} 超出 {type} 主記憶體（{capacity} 位元組）。");
         }
     }
 
@@ -92,7 +92,7 @@ public static class CardCodec
         if (bytes.Length != expected)
         {
             throw new FormatException(
-                $"{type} password must be {expected} bytes ({expected * 2} hex digits).");
+                $"{type} 密碼必須是 {expected} 位元組（{expected * 2} 個十六進位數字）。");
         }
 
         return bytes;
@@ -109,7 +109,7 @@ public static class CardCodec
 
             var digit = HexValue(character);
             if (digit < 0)
-                throw new FormatException("Password hex contains a non-hex character.");
+                throw new FormatException("密碼十六進位包含非十六進位字元。");
 
             if (nibble < 0)
             {
@@ -123,7 +123,7 @@ public static class CardCodec
         }
 
         if (nibble >= 0)
-            throw new FormatException("Password hex has an odd number of digits.");
+            throw new FormatException("密碼十六進位的位數必須是雙數。");
 
         return buffer.ToArray();
     }
@@ -135,14 +135,14 @@ public static class CardCodec
 
         var text = memberNumber.Trim();
         if (text.Length == 0)
-            throw new ArgumentException("Member number is empty.", nameof(memberNumber));
+            throw new ArgumentException("會員編號是空的。", nameof(memberNumber));
         if (text.Length > length)
-            throw new ArgumentException($"Member number is longer than the card field ({length}).", nameof(memberNumber));
+            throw new ArgumentException($"會員編號長過卡片欄位（{length}）。", nameof(memberNumber));
 
         foreach (var character in text)
         {
             if (character is < (char)32 or > (char)126)
-                throw new ArgumentException("Member number on the card must be printable ASCII.", nameof(memberNumber));
+                throw new ArgumentException("寫入卡片的會員編號必須是可列印的 ASCII。", nameof(memberNumber));
         }
 
         var bytes = new byte[length];

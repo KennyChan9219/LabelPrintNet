@@ -15,7 +15,7 @@ public static class CardReaderConfigStore
         }
         catch (Exception ex) when (ex is FormatException or InvalidOperationException)
         {
-            throw new InvalidOperationException($"Could not read {path}. {ex.Message}", ex);
+            throw new InvalidOperationException($"無法讀取 {path}。{ex.Message}", ex);
         }
     }
 
@@ -34,17 +34,17 @@ public static class CardReaderConfigStore
             {
                 section = line[1..^1].Trim();
                 if (!section.Equals("Reader", StringComparison.OrdinalIgnoreCase))
-                    throw new FormatException($"Unknown section [{section}]. Expected [Reader].");
+                    throw new FormatException($"不明區段 [{section}]。應為 [Reader]。");
                 sawReader = true;
                 continue;
             }
 
             if (!string.Equals(section, "Reader", StringComparison.OrdinalIgnoreCase))
-                throw new FormatException("Keys must be under [Reader].");
+                throw new FormatException("鍵必須放在 [Reader] 之下。");
 
             var separator = line.IndexOf('=');
             if (separator <= 0)
-                throw new FormatException($"Expected key=value, saw '{line}'.");
+                throw new FormatException($"應為 key=value，卻見到「{line}」。");
 
             var key = line[..separator].Trim();
             var value = line[(separator + 1)..].Trim();
@@ -72,7 +72,7 @@ public static class CardReaderConfigStore
 
         var body = new StringBuilder()
             .AppendLine("; LabelPrint CardReader.config")
-            .AppendLine("; Reader model and port only. Do not put a password in this file.")
+            .AppendLine("; 只記錄讀卡機型號與連接埠。不要在此檔放入密碼。")
             .AppendLine("[Reader]")
             .Append("Model=").AppendLine(settings.Model.Trim())
             .Append("Port=").AppendLine(settings.Port.ToString(CultureInfo.InvariantCulture))
@@ -93,7 +93,7 @@ public static class CardReaderConfigStore
         if (key.Equals("Port", StringComparison.OrdinalIgnoreCase))
         {
             if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var port))
-                throw new FormatException($"Port '{value}' is not a whole number.");
+                throw new FormatException($"連接埠「{value}」不是整數。");
             settings.Port = port;
             return;
         }
@@ -107,7 +107,7 @@ public static class CardReaderConfigStore
         if (key.Equals("InitType", StringComparison.OrdinalIgnoreCase))
         {
             if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var type))
-                throw new FormatException($"InitType '{value}' is not a whole number.");
+                throw new FormatException($"InitType「{value}」不是整數。");
             settings.InitType = type;
             return;
         }
@@ -115,21 +115,21 @@ public static class CardReaderConfigStore
         if (key.Contains("Password", StringComparison.OrdinalIgnoreCase) || key.Contains("Pin", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
-                "CardReader.config must not contain a password. Set LabelPrint:Card:PasswordHex in user secrets.");
+                "CardReader.config 不可包含密碼。請在 user secrets 設定 LabelPrint:Card:PasswordHex。");
         }
 
-        throw new FormatException($"Unknown key '{key}'.");
+        throw new FormatException($"不明鍵「{key}」。");
     }
 
     public static void Validate(CardReaderSettings settings)
     {
         var model = settings.Model?.Trim() ?? "";
         if (model.Length is 0 or > 120 || model.Contains('\r') || model.Contains('\n'))
-            throw new InvalidOperationException("Reader model must be a single line of 1 to 120 characters.");
+            throw new InvalidOperationException("讀卡機型號必須是 1 至 120 個字元的單行。");
         if (settings.Port is < 0 or > short.MaxValue)
-            throw new InvalidOperationException("Reader port must be between 0 and 32767.");
+            throw new InvalidOperationException("連接埠必須介乎 0 至 32767。");
         if (settings.InitType is < 0 or > 255)
-            throw new InvalidOperationException("InitType must be between 0 and 255 when it is set.");
+            throw new InvalidOperationException("若設定 InitType，必須介乎 0 至 255。");
 
         settings.Model = model;
     }
@@ -141,7 +141,7 @@ public static class CardReaderConfigStore
             return CardType.Sle4442;
         if (text.Equals("SLE4428", StringComparison.OrdinalIgnoreCase) || text.Equals("4428", StringComparison.OrdinalIgnoreCase))
             return CardType.Sle4428;
-        throw new FormatException($"Unknown card type '{value}'. Use SLE4442 or SLE4428.");
+        throw new FormatException($"不明卡類「{value}」。請使用 SLE4442 或 SLE4428。");
     }
 
     public static string ToConfig(CardType type) => type switch

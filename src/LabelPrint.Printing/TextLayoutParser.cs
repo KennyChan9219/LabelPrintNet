@@ -30,7 +30,7 @@ public static class TextLayoutParser
 
             var separator = line.IndexOf('=');
             if (separator <= 0)
-                throw new FormatException($"Expected key=value or [section], saw '{line}'.");
+                throw new FormatException($"應為 key=value 或 [section]，卻見到「{line}」。");
 
             var key = line[..separator].Trim();
             var value = line[(separator + 1)..].Trim();
@@ -43,18 +43,18 @@ public static class TextLayoutParser
         Flush();
 
         if (!header.TryGetValue("Format", out var format) || !string.Equals(format, FormatId, StringComparison.Ordinal))
-            throw new FormatException($"Template format must be {FormatId}.");
+            throw new FormatException($"範本格式必須是 {FormatId}。");
 
         var width = ParseDouble(Require(header, "WidthMm"), "WidthMm");
         var height = ParseDouble(Require(header, "HeightMm"), "HeightMm");
         if (width is <= 0 or > 500 || height is <= 0 or > 500)
-            throw new FormatException("WidthMm and HeightMm must be greater than 0 and at most 500.");
+            throw new FormatException("WidthMm 與 HeightMm 必須大於 0，且不可超過 500。");
 
         var copies = 1;
         if (header.TryGetValue("Copies", out var copiesText) && copiesText.Length > 0)
         {
             if (!int.TryParse(copiesText, NumberStyles.Integer, CultureInfo.InvariantCulture, out copies) || copies is < 1 or > 20)
-                throw new FormatException("Copies must be a whole number from 1 to 20.");
+                throw new FormatException("Copies 必須是 1 至 20 的整數。");
         }
 
         header.TryGetValue("Background", out var background);
@@ -75,11 +75,11 @@ public static class TextLayoutParser
             if (section is null || sectionName is null)
                 return;
             if (!sectionName.StartsWith("Field.", StringComparison.OrdinalIgnoreCase))
-                throw new FormatException($"Unknown section [{sectionName}]. Use [Field.Name].");
+                throw new FormatException($"不明區段 [{sectionName}]。請使用 [Field.Name]。");
 
             var fieldName = sectionName["Field.".Length..].Trim();
             if (fieldName.Length == 0)
-                throw new FormatException("A field section needs a name.");
+                throw new FormatException("欄位區段需要名稱。");
 
             fields.Add(ParseField(fieldName, section));
             section = null;
@@ -93,28 +93,28 @@ public static class TextLayoutParser
         if (!NameplateFields.All.Contains(source, StringComparer.OrdinalIgnoreCase))
         {
             throw new FormatException(
-                $"Field {name} uses unknown source '{source}'. Known sources: {string.Join(", ", NameplateFields.All)}.");
+                $"欄位 {name} 使用不明來源「{source}」。已知來源：{string.Join(", ", NameplateFields.All)}。");
         }
 
         var align = TextAlign.Left;
         if (section.TryGetValue("Align", out var alignText) && alignText.Length > 0)
         {
             if (!Enum.TryParse(alignText, ignoreCase: true, out align))
-                throw new FormatException($"Field {name} has unknown Align '{alignText}'.");
+                throw new FormatException($"欄位 {name} 的 Align「{alignText}」不明。");
         }
 
         var bold = false;
         if (section.TryGetValue("Bold", out var boldText) && boldText.Length > 0)
         {
             if (!bool.TryParse(boldText, out bold))
-                throw new FormatException($"Field {name} Bold must be true or false.");
+                throw new FormatException($"欄位 {name} 的 Bold 必須是 true 或 false。");
         }
 
         var size = 12f;
         if (section.TryGetValue("SizePt", out var sizeText) && sizeText.Length > 0)
         {
             if (!float.TryParse(sizeText, NumberStyles.Float, CultureInfo.InvariantCulture, out size) || size is < 4 or > 96)
-                throw new FormatException($"Field {name} SizePt must be between 4 and 96.");
+                throw new FormatException($"欄位 {name} 的 SizePt 必須介乎 4 至 96。");
         }
 
         section.TryGetValue("Font", out var font);
@@ -138,14 +138,14 @@ public static class TextLayoutParser
     private static string Require(Dictionary<string, string> values, string key)
     {
         if (!values.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
-            throw new FormatException($"Missing {key}.");
+            throw new FormatException($"缺少 {key}。");
         return value.Trim();
     }
 
     private static double ParseDouble(string text, string name)
     {
         if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
-            throw new FormatException($"{name} must be a number.");
+            throw new FormatException($"{name} 必須是數字。");
         return value;
     }
 }

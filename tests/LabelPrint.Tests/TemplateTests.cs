@@ -124,7 +124,7 @@ public class TemplateTests
             Assert.Equal("Desk badge", loaded.Layout.Name);
             Assert.Equal("Chan", loaded.Binding.Get(NameplateFields.EmpName));
             Assert.True(missing.UsedFallbackLayout);
-            Assert.Equal("Employee nameplate 2", missing.Layout.Name);
+            Assert.Equal("員工名牌 2", missing.Layout.Name);
             Assert.Contains(missing.Layout.Fields, field => field.Source == NameplateFields.EmpName);
         }
         finally

@@ -85,11 +85,11 @@ internal sealed class MainForm : Form
         txtStaffNo = Box();
         txtEmpName = Box();
         lblEmpEnglish = new Label { AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 8, 8, 4) };
-        cmdGetEmp = Button("Look up");
-        cmdPrintEmp = Button("Print employee");
-        cmdPreviewEmp = Button("Preview");
-        optEmp1 = Radio("Empnameplate1.lbl", true);
-        optEmp2 = Radio("Empnameplate2.lbl", false);
+        cmdGetEmp = Button("查詢");
+        cmdPrintEmp = Button("列印員工");
+        cmdPreviewEmp = Button("預覽");
+        optEmp1 = Radio("員工名牌 1", true);
+        optEmp2 = Radio("員工名牌 2", false);
         picEmp = Preview();
         txtLeag_No = Box();
         txtLeag_Name = Box();
@@ -97,21 +97,21 @@ internal sealed class MainForm : Form
         txtMemberCode = Box();
         txtValiddate = Box();
         txtTempMem = Box();
-        cmdGetMem = Button("Look up");
-        cmdRead = Button("Read card");
-        cmdPrint = Button("Print member");
-        cmdPreview = Button("Preview");
-        optMember1 = Radio("nameplate1.lbl", true);
-        optMember2 = Radio("nameplate2.lbl", false);
-        optMember3 = Radio("nameplate3.lbl", false);
+        cmdGetMem = Button("查詢");
+        cmdRead = Button("讀卡");
+        cmdPrint = Button("列印會員");
+        cmdPreview = Button("預覽");
+        optMember1 = Radio("會員名牌 1", true);
+        optMember2 = Radio("會員名牌 2", false);
+        optMember3 = Radio("會員名牌 3", false);
         picLabel1 = Preview();
         picLabel2 = Preview();
-        lblMemName = Caption();
-        lblMemName2 = Caption();
-        _status = new ToolStripStatusLabel("Ready") { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
-        _statusDb = StatusCell(150);
-        _statusReader = StatusCell(280);
-        _statusTemplate = StatusCell(160);
+        lblMemName = Caption("會員姓名");
+        lblMemName2 = Caption("會員姓名");
+        _status = new ToolStripStatusLabel("就緒") { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
+        _statusDb = StatusCell(160);
+        _statusReader = StatusCell(340);
+        _statusTemplate = StatusCell(120);
         _split = new SplitContainer
         {
             Dock = DockStyle.Fill,
@@ -149,19 +149,19 @@ internal sealed class MainForm : Form
     private MenuStrip BuildMenu()
     {
         var menu = new MenuStrip();
-        var file = new ToolStripMenuItem("&File");
-        file.DropDownItems.Add("&Exit", null, (_, _) => Close());
+        var file = new ToolStripMenuItem("檔案(&F)");
+        file.DropDownItems.Add("結束(&X)", null, (_, _) => Close());
 
-        var card = new ToolStripMenuItem("&Card");
-        card.DropDownItems.Add("&Member card...", null, (_, _) => OpenMemberCard());
-        card.DropDownItems.Add("&Read card", null, async (_, _) => await RunBusy(ReadCardAsync));
+        var card = new ToolStripMenuItem("智能卡(&C)");
+        card.DropDownItems.Add("會員卡(&M)...", null, (_, _) => OpenMemberCard());
+        card.DropDownItems.Add("讀卡(&R)", null, async (_, _) => await RunBusy(ReadCardAsync));
 
-        var settings = new ToolStripMenuItem("&Settings");
-        settings.DropDownItems.Add("&Reader model...", null, (_, _) => OpenReader());
-        settings.DropDownItems.Add("&Test MIS connection", null, async (_, _) => await RunBusy(TestMisAsync));
+        var settings = new ToolStripMenuItem("設定(&S)");
+        settings.DropDownItems.Add("讀卡機型號(&E)...", null, (_, _) => OpenReader());
+        settings.DropDownItems.Add("測試 MIS 連線(&T)", null, async (_, _) => await RunBusy(TestMisAsync));
 
-        var help = new ToolStripMenuItem("&Help");
-        help.DropDownItems.Add("&About LabelPrint", null, (_, _) => ShowAbout());
+        var help = new ToolStripMenuItem("說明(&H)");
+        help.DropDownItems.Add("關於 LabelPrint(&A)", null, (_, _) => ShowAbout());
 
         menu.Items.AddRange([file, card, settings, help]);
         return menu;
@@ -169,16 +169,16 @@ internal sealed class MainForm : Form
 
     private void BuildEmployee(Control parent)
     {
-        var group = new GroupBox { Text = "Employee nameplate", Dock = DockStyle.Fill, Padding = new Padding(8) };
+        var group = new GroupBox { Text = "員工名牌", Dock = DockStyle.Fill, Padding = new Padding(8) };
         var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1 };
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         var fields = FieldGrid();
-        AddRow(fields, 0, Label("Staff no"), txtStaffNo, cmdGetEmp);
-        AddSpan(fields, 1, Label("Name"), txtEmpName);
-        AddSpan(fields, 2, Label("English"), lblEmpEnglish);
+        AddRow(fields, 0, Label("員工編號"), txtStaffNo, cmdGetEmp);
+        AddSpan(fields, 1, Label("員工姓名"), txtEmpName);
+        AddSpan(fields, 2, Label("英文姓名"), lblEmpEnglish);
         var radios = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, WrapContents = false };
         radios.Controls.Add(optEmp1);
         radios.Controls.Add(optEmp2);
@@ -198,7 +198,7 @@ internal sealed class MainForm : Form
 
     private void BuildMember(Control parent)
     {
-        var group = new GroupBox { Text = "Member nameplate", Dock = DockStyle.Fill, Padding = new Padding(8) };
+        var group = new GroupBox { Text = "會員名牌", Dock = DockStyle.Fill, Padding = new Padding(8) };
         var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4 };
         grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -206,26 +206,26 @@ internal sealed class MainForm : Form
         grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         var fields = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 4, RowCount = 4 };
-        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
+        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
         fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
         fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         for (var row = 0; row < 4; row++)
             fields.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        fields.Controls.Add(Label("Member no"), 0, 0);
+        fields.Controls.Add(Label("會員編號"), 0, 0);
         fields.Controls.Add(txtLeag_No, 1, 0);
         fields.Controls.Add(cmdGetMem, 2, 0);
-        fields.Controls.Add(Label("Name"), 0, 1);
+        fields.Controls.Add(Label("會員姓名"), 0, 1);
         fields.Controls.Add(txtLeag_Name, 1, 1);
         fields.SetColumnSpan(txtLeag_Name, 3);
-        fields.Controls.Add(Label("Card no"), 0, 2);
+        fields.Controls.Add(Label("卡號"), 0, 2);
         fields.Controls.Add(txtCardNo, 1, 2);
-        fields.Controls.Add(Label("Member code"), 2, 2);
+        fields.Controls.Add(Label("會員代碼"), 2, 2);
         fields.Controls.Add(txtMemberCode, 3, 2);
-        fields.Controls.Add(Label("Valid date"), 0, 3);
+        fields.Controls.Add(Label("有效日期"), 0, 3);
         fields.Controls.Add(txtValiddate, 1, 3);
-        fields.Controls.Add(Label("Temp member"), 2, 3);
+        fields.Controls.Add(Label("臨時會員"), 2, 3);
         fields.Controls.Add(txtTempMem, 3, 3);
 
         var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, WrapContents = false };
@@ -294,7 +294,7 @@ internal sealed class MainForm : Form
         var name = txtEmpName.Text.Trim();
         if (staffNo.Length == 0 && name.Length == 0)
         {
-            Ui.Info(this, "Enter a staff number or a name.");
+            Ui.Info(this, "請輸入員工編號或姓名。");
             return;
         }
 
@@ -303,7 +303,7 @@ internal sealed class MainForm : Form
             var record = await _employees.FindByStaffNumberAsync(staffNo);
             if (record is null)
             {
-                Ui.Info(this, $"No employee with staff number {staffNo}.");
+                Ui.Info(this, $"找不到員工編號 {staffNo}。");
                 return;
             }
 
@@ -314,13 +314,13 @@ internal sealed class MainForm : Form
         var rows = await _employees.SearchByNameAsync(name);
         if (rows.Count == 0)
         {
-            Ui.Info(this, $"No employee matching \"{name}\".");
+            Ui.Info(this, $"找不到符合「{name}」的員工。");
             return;
         }
 
         var index = rows.Count == 1
             ? 0
-            : NamePickForm.Choose(this, "Employee", rows.Select(row => $"{row.StaffNumber}  {row.DisplayName}").ToList());
+            : NamePickForm.Choose(this, "員工", rows.Select(row => $"{row.StaffNumber}  {row.DisplayName}").ToList());
         if (index is int chosen)
             ShowEmployee(rows[chosen]);
     }
@@ -332,7 +332,7 @@ internal sealed class MainForm : Form
         var name = txtLeag_Name.Text.Trim();
         if (number.Length == 0 && card.Length == 0 && name.Length == 0)
         {
-            Ui.Info(this, "Enter a member number, card number, or name.");
+            Ui.Info(this, "請輸入會員編號、卡號或姓名。");
             return;
         }
 
@@ -341,7 +341,7 @@ internal sealed class MainForm : Form
             var record = await _members.FindByNumberAsync(number);
             if (record is null)
             {
-                Ui.Info(this, $"No member with number {number}.");
+                Ui.Info(this, $"找不到會員編號 {number}。");
                 return;
             }
 
@@ -354,7 +354,7 @@ internal sealed class MainForm : Form
             var record = await _members.FindByOldCardNumberAsync(card);
             if (record is null)
             {
-                Ui.Info(this, $"No member with card number {card}.");
+                Ui.Info(this, $"找不到卡號 {card}。");
                 return;
             }
 
@@ -365,13 +365,13 @@ internal sealed class MainForm : Form
         var rows = await _members.SearchByNameAsync(name);
         if (rows.Count == 0)
         {
-            Ui.Info(this, $"No member matching \"{name}\".");
+            Ui.Info(this, $"找不到符合「{name}」的會員。");
             return;
         }
 
         var index = rows.Count == 1
             ? 0
-            : NamePickForm.Choose(this, "Member", rows.Select(row => $"{row.Number}  {row.Name}").ToList());
+            : NamePickForm.Choose(this, "會員", rows.Select(row => $"{row.Number}  {row.Name}").ToList());
         if (index is int chosen)
             ShowMember(rows[chosen]);
     }
@@ -392,7 +392,7 @@ internal sealed class MainForm : Form
             _loading = false;
         }
 
-        SetStatus($"Read {memory.Bytes.Length} bytes at offset {memory.Offset}.");
+        SetStatus($"已讀取偏移 {memory.Offset} 的 {memory.Bytes.Length} 位元組。");
         _logger.LogInformation("Read member area, {Length} bytes at offset {Offset}", memory.Bytes.Length, memory.Offset);
         if (memberNumber.Length > 0)
             await LookupMemberAsync();
@@ -403,8 +403,8 @@ internal sealed class MainForm : Form
     private async Task TestMisAsync()
     {
         await _database.CanConnectAsync();
-        Ui.Info(this, "MIS accepted the connection.");
-        SetStatus("MIS connection succeeded.");
+        Ui.Info(this, "MIS 已接受連線。");
+        SetStatus("MIS 連線成功。");
     }
 
     private void PrintEmployee(bool preview)
@@ -414,7 +414,7 @@ internal sealed class MainForm : Form
             PullUi();
             if (string.IsNullOrWhiteSpace(_session.Employee.PrintedName))
             {
-                Ui.Info(this, "Enter the employee name before printing.");
+                Ui.Info(this, "列印前請輸入員工姓名。");
                 return;
             }
 
@@ -428,7 +428,7 @@ internal sealed class MainForm : Form
             else
                 NameplatePrinter.Print(bitmap, job.Layout, job.DocumentName, job.Copies, _options.Value.PrinterName);
 
-            SetStatus(preview ? "Employee preview closed." : "Employee nameplate sent to the printer.");
+            SetStatus(preview ? "已關閉員工名牌預覽。" : "已將員工名牌送到打印機。");
         }
         catch (Exception ex)
         {
@@ -443,7 +443,7 @@ internal sealed class MainForm : Form
             PullUi();
             if (string.IsNullOrWhiteSpace(_session.Member.Name))
             {
-                Ui.Info(this, "Enter the member name before printing.");
+                Ui.Info(this, "列印前請輸入會員姓名。");
                 return;
             }
 
@@ -457,7 +457,7 @@ internal sealed class MainForm : Form
             else
                 NameplatePrinter.Print(bitmap, job.Layout, job.DocumentName, job.Copies, _options.Value.PrinterName);
 
-            SetStatus(preview ? "Member preview closed." : "Member nameplate sent to the printer.");
+            SetStatus(preview ? "已關閉會員名牌預覽。" : "已將會員名牌送到打印機。");
         }
         catch (Exception ex)
         {
@@ -470,7 +470,7 @@ internal sealed class MainForm : Form
         if (!job.UsedFallbackLayout)
             return true;
 
-        return Ui.Confirm(this, job.Template.Message + Environment.NewLine + Environment.NewLine + "Print the built-in layout?");
+        return Ui.Confirm(this, job.Template.Message + Environment.NewLine + Environment.NewLine + "要列印內建版面嗎？");
     }
 
     private void ShowEmployee(EmployeeRecord record)
@@ -489,7 +489,7 @@ internal sealed class MainForm : Form
         }
 
         RefreshPreviews();
-        SetStatus($"Employee {record.StaffNumber} loaded.");
+        SetStatus($"已載入員工 {record.StaffNumber}。");
     }
 
     private void ShowMember(LeagerRecord record)
@@ -506,7 +506,7 @@ internal sealed class MainForm : Form
         }
 
         RefreshPreviews();
-        SetStatus($"Member {record.Number} loaded.");
+        SetStatus($"已載入會員 {record.Number}。");
     }
 
     private void OpenMemberCard()
@@ -537,17 +537,17 @@ internal sealed class MainForm : Form
 
     private void ShowAbout()
     {
-        var dll = _reader.NativeLibraryPresent ? "found" : "missing";
-        var dependency = _reader.DependencyLibraryPresent ? "found" : "missing";
+        var dll = _reader.NativeLibraryPresent ? "已找到" : "找不到";
+        var dependency = _reader.DependencyLibraryPresent ? "已找到" : "找不到";
         Ui.Info(this,
             "LabelPrint 1.06" + Environment.NewLine +
             "Jumping Gym U.S.A" + Environment.NewLine +
-            ".NET 8 rebuild of the VB6 desk application." + Environment.NewLine + Environment.NewLine +
-            "Templates:" + Environment.NewLine + _catalog.SearchPathDescription + Environment.NewLine + Environment.NewLine +
-            "Reader file: " + _reader.SettingsPath + Environment.NewLine +
-            "IC_D600.dll: " + dll + Environment.NewLine +
-            "acsr2032.dll: " + dependency + Environment.NewLine +
-            "Log: " + FileLog.Path);
+            ".NET 8 重寫的 VB6 櫃檯程式。" + Environment.NewLine + Environment.NewLine +
+            "名牌範本：" + Environment.NewLine + _catalog.SearchPathDescription + Environment.NewLine + Environment.NewLine +
+            "讀卡機設定檔：" + _reader.SettingsPath + Environment.NewLine +
+            "IC_D600.dll：" + dll + Environment.NewLine +
+            "acsr2032.dll：" + dependency + Environment.NewLine +
+            "記錄檔：" + FileLog.Path);
     }
 
     private void PullUi()
@@ -604,20 +604,18 @@ internal sealed class MainForm : Form
         if (caption is null)
             return;
 
-        var note = job.Template.Status == TemplateLoadStatus.Loaded ? "" : " (built-in layout)";
+        var note = job.Template.Status == TemplateLoadStatus.Loaded ? "" : "（內建版面）";
         var name = job.Binding.Get(NameplateFields.LeagName);
-        caption.Text = string.IsNullOrWhiteSpace(name)
-            ? job.Template.FileName + note
-            : $"{job.Template.FileName}{note} — {name}";
+        caption.Text = (string.IsNullOrWhiteSpace(name) ? "會員姓名" : name) + note;
     }
 
     private void RefreshStatus()
     {
         var templates = _catalog.LoadAll();
         var ready = templates.Count(result => result.Status == TemplateLoadStatus.Loaded);
-        _statusDb.Text = _database.IsConfigured ? "MIS: configured" : "MIS: not configured";
-        _statusReader.Text = _reader.Settings.Model + (_reader.NativeLibraryPresent ? "  DLL found" : "  DLL missing");
-        _statusTemplate.Text = $"Templates {ready}/{templates.Count}";
+        _statusDb.Text = _database.IsConfigured ? "MIS：已設定" : "MIS：未設定";
+        _statusReader.Text = _reader.Settings.Model + (_reader.NativeLibraryPresent ? "  已找到 DLL" : "  找不到 DLL");
+        _statusTemplate.Text = $"範本 {ready}/{templates.Count}";
     }
 
     private LabelTemplateSlot SelectedMemberSlot()
@@ -708,8 +706,9 @@ internal sealed class MainForm : Form
         Margin = new Padding(0, 8, 8, 4)
     };
 
-    private static Label Caption() => new()
+    private static Label Caption(string text) => new()
     {
+        Text = text,
         AutoSize = true,
         Dock = DockStyle.Fill,
         Margin = new Padding(4, 0, 4, 0)
@@ -732,7 +731,7 @@ internal sealed class MainForm : Form
             ColumnCount = 3,
             RowCount = 5
         };
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
         for (var row = 0; row < 5; row++)

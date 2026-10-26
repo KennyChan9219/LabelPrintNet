@@ -38,7 +38,7 @@ public sealed class LabelTemplateCatalog : ILabelTemplateCatalog
             Slot = slot,
             FileName = fileName,
             Status = TemplateLoadStatus.Missing,
-            Message = $"{fileName} was not found. Searched: {SearchPathDescription}"
+            Message = $"{fileName} 找不到。已搜尋：{SearchPathDescription}"
         };
     }
 
@@ -61,7 +61,7 @@ public sealed class LabelTemplateCatalog : ILabelTemplateCatalog
                 FileName = fileName,
                 ResolvedPath = path,
                 Status = TemplateLoadStatus.UnrecognizedBinary,
-                Message = $"TODO(on-machine): {fileName} is larger than 8 MB and was not decoded."
+                Message = $"TODO(on-machine): {fileName} 大於 8 MB，未解碼。"
             };
         }
 
@@ -86,7 +86,7 @@ public sealed class LabelTemplateCatalog : ILabelTemplateCatalog
                     SourcePath = path,
                     Fields = builtin.Fields
                 },
-                Message = $"{fileName} is a {imageKind} image. Text positions are the built-in overlay. TODO(on-machine): calibrate them against the printed stock."
+                Message = $"{fileName} 是 {imageKind} 圖片。文字位置使用內建疊加。TODO(on-machine): 請對照實際標籤校準。"
             };
         }
 
@@ -98,7 +98,7 @@ public sealed class LabelTemplateCatalog : ILabelTemplateCatalog
                 FileName = fileName,
                 ResolvedPath = path,
                 Status = TemplateLoadStatus.UnrecognizedBinary,
-                Message = $"TODO(on-machine): {fileName} is not a text layout or an image. Capture a sample from the gym PC and decode the legacy binary .lbl. Printing uses the built-in layout."
+                Message = $"TODO(on-machine): {fileName} 不是文字版面或圖片。請從櫃檯電腦取得樣本並解碼舊版二進位 .lbl。列印會使用內建版面。"
             };
         }
 
@@ -106,9 +106,9 @@ public sealed class LabelTemplateCatalog : ILabelTemplateCatalog
         {
             var document = TextLayoutParser.Parse(Decode(bytes), path);
             document = ResolveBackground(document, path);
-            var message = "Loaded text layout.";
+            var message = "已載入文字版面。";
             if (!string.IsNullOrWhiteSpace(document.BackgroundPath) && !File.Exists(document.BackgroundPath))
-                message = $"Loaded text layout. Background was not found: {document.BackgroundPath}";
+                message = $"已載入文字版面。找不到背景：{document.BackgroundPath}";
 
             return new TemplateLoadResult
             {
@@ -128,7 +128,7 @@ public sealed class LabelTemplateCatalog : ILabelTemplateCatalog
                 FileName = fileName,
                 ResolvedPath = path,
                 Status = TemplateLoadStatus.InvalidText,
-                Message = $"{fileName} is a text layout but could not be parsed: {ex.Message}"
+                Message = $"{fileName} 是文字版面，但無法解析：{ex.Message}"
             };
         }
     }

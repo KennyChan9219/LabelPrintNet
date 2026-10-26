@@ -2,6 +2,8 @@
 
 .NET 8 Windows Forms rebuild of Jumping Gym's VB6 LabelPrint 1.06 desk application. It prints employee and member nameplates, reads and writes SLE4442/SLE4428 member cards through `IC_D600.dll`, and looks up MIS SQL Server. The connection string and card PIN come from configuration. They are not in source.
 
+The desk UI (forms, menus, buttons, status text, and message boxes) is Traditional Chinese (Hong Kong, zh-Hant-HK). Control names in code stay English. The only caption recovered from the VB6 ASCII strings was `Member Name` (`lblMemName` / `lblMemName2`), shown as 會員姓名. Other captions use Hong Kong wording for the same controls (列印, 儲存, 設定, 檔案, 結束).
+
 The original binary is PE32 x86 (`MSVBVM60`), SHA256 `55e056f67fa784fb76e9e90b371f3712daa22c276ca8977e58b67068aa5fcd75`. No `.vbp` / `.frm` source was available, so behaviour is reconstructed from the form and control names, the template file names, and the MIS tables named in that binary. Hardware calls and the legacy `.lbl` binary format still need a pass on a desk PC. Those spots are marked `TODO(on-machine)`.
 
 ## Build and run
@@ -134,19 +136,19 @@ Paper size sent to the printer is the template size in millimetres, with zero ma
 | `Form1` | `MainForm` — employee nameplate, member nameplate, status bar |
 | `frmMemberCard` + `modMemberCard` | `MemberCardForm`, `CardReaderService`, `CardCodec` |
 | `frmReaderModel` | `ReaderModelForm` |
-| `mnuReaderModel`, `cboReaderModel` | Settings → Reader model, model combo |
+| `mnuReaderModel`, `cboReaderModel` | 設定 → 讀卡機型號, model combo |
 | `txtStaffNo`, `txtEmpName`, `cmdGetEmp`, `cmdPrintEmp` | Employee group |
 | `txtLeag_No`, `txtLeag_Name`, `txtCardNo`, `txtMemberCode`, `txtValiddate`, `txtTempMem` | Member group and Member card |
 | `optMember` | `nameplate1.lbl` / `nameplate2.lbl` / `nameplate3.lbl` |
 | `picLabel1`, `picLabel2`, `lblMemName`, `lblMemName2` | The two member previews |
-| `cmdPrint`, `cmdRead` | Print member, Read card |
+| `cmdPrint`, `cmdRead` | 列印會員, 讀卡 |
 | `MSComctlLib.StatusBar` | Status strip: message, MIS, reader, templates |
 | `CardReader.config` | Same file name |
 | `Empnameplate1.lbl`, `Empnameplate2.lbl`, `nameplate1.lbl`, `nameplate2.lbl`, `nameplate3.lbl` | Same file names |
 
-`Label1`–`Label5` in the VB6 form were unnamed captions. This form uses Staff no, Name, Member no, and the other captions directly. The string list did not include a member lookup button; **Look up** next to the member number is that action (`cmdGetMem`). `txtCardNo` / `txtCardNum` are one card-number box. `MU_ID` is available to a template as `EmpId` and is not shown, because the old form had no such box.
+`Label1`–`Label5` in the VB6 form were unnamed captions. This form shows 員工編號, 員工姓名, 會員編號, 會員姓名, and the other field captions in Traditional Chinese. The string list did not include a member lookup button; **查詢** next to the member number is that action (`cmdGetMem`). `txtCardNo` / `txtCardNum` are one card-number box. `MU_ID` is available to a template as `EmpId` and is not shown, because the old form had no such box.
 
-Enter in the staff-number or member-number box runs Look up. Look up by number is exact. If the number box is empty, Look up searches by name (employees: English or Chinese) or, for members, by card number when that box is the one filled in.
+Enter in the staff-number or member-number box runs 查詢. Lookup by number is exact. If the number box is empty, 查詢 searches by name (employees: English or Chinese) or, for members, by card number when that box is the one filled in.
 
 ## Projects
 

@@ -11,7 +11,7 @@ internal sealed class ReaderModelForm : Form
     private readonly ComboBox cboReaderModel = new() { DropDownStyle = ComboBoxStyle.DropDown, Dock = DockStyle.Fill };
     private readonly NumericUpDown _port = new() { Minimum = 0, Maximum = 32767, Dock = DockStyle.Left, Width = 120 };
     private readonly ComboBox _cardType = new() { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill };
-    private readonly CheckBox _initTypeEnabled = new() { Text = "Call IC_InitType", AutoSize = true };
+    private readonly CheckBox _initTypeEnabled = new() { Text = "呼叫 IC_InitType", AutoSize = true };
     private readonly NumericUpDown _initType = new() { Minimum = 0, Maximum = 255, Dock = DockStyle.Left, Width = 80, Enabled = false };
     private readonly Label _result = new() { AutoSize = true, MaximumSize = new Size(460, 0), Padding = new Padding(0, 8, 0, 0) };
 
@@ -20,12 +20,12 @@ internal sealed class ReaderModelForm : Form
         _reader = reader;
         _logger = logger;
         Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point);
-        Text = "Reader model";
+        Text = "讀卡機型號";
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MinimizeBox = false;
         MaximizeBox = false;
-        ClientSize = new Size(520, 390);
+        ClientSize = new Size(560, 460);
 
         _reader.Reload();
         _cardType.Items.AddRange(["SLE4442", "SLE4428"]);
@@ -52,13 +52,13 @@ internal sealed class ReaderModelForm : Form
         for (var row = 0; row < 8; row++)
             grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        var refresh = new Button { Text = "Refresh PC/SC readers", AutoSize = true };
+        var refresh = new Button { Text = "重新整理 PC/SC 讀卡機", AutoSize = true };
         refresh.Click += (_, _) => RefreshReaders();
-        var probe = new Button { Text = "Probe", AutoSize = true };
+        var probe = new Button { Text = "測試", AutoSize = true };
         probe.Click += (_, _) => Probe();
-        var save = new Button { Text = "Save", AutoSize = true };
+        var save = new Button { Text = "儲存", AutoSize = true };
         save.Click += (_, _) => Save();
-        var close = new Button { Text = "Close", AutoSize = true, DialogResult = DialogResult.Cancel };
+        var close = new Button { Text = "關閉", AutoSize = true, DialogResult = DialogResult.Cancel };
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
         buttons.Controls.Add(refresh);
         buttons.Controls.Add(probe);
@@ -67,9 +67,9 @@ internal sealed class ReaderModelForm : Form
 
         _initTypeEnabled.CheckedChanged += (_, _) => _initType.Enabled = _initTypeEnabled.Checked;
 
-        Add(grid, 0, "Model", cboReaderModel);
-        Add(grid, 1, "Port", _port);
-        Add(grid, 2, "Card type", _cardType);
+        Add(grid, 0, "型號", cboReaderModel);
+        Add(grid, 1, "連接埠", _port);
+        Add(grid, 2, "卡類", _cardType);
         grid.Controls.Add(_initTypeEnabled, 0, 3);
         grid.Controls.Add(_initType, 1, 3);
         grid.Controls.Add(buttons, 0, 4);
@@ -78,11 +78,11 @@ internal sealed class ReaderModelForm : Form
         {
             AutoSize = true,
             MaximumSize = new Size(480, 0),
-            Text = "IC_D600.dll: " + (_reader.NativeLibraryPresent ? _reader.NativeLibraryPath : "missing, copy it beside the exe")
+            Text = "IC_D600.dll：" + (_reader.NativeLibraryPresent ? _reader.NativeLibraryPath : "找不到，請複製到執行檔旁邊")
                 + Environment.NewLine
-                + "acsr2032.dll: " + (_reader.DependencyLibraryPresent ? _reader.DependencyLibraryPath : "missing, copy it beside the exe")
+                + "acsr2032.dll：" + (_reader.DependencyLibraryPresent ? _reader.DependencyLibraryPath : "找不到，請複製到執行檔旁邊")
                 + Environment.NewLine
-                + "Config: " + _reader.SettingsPath
+                + "設定檔：" + _reader.SettingsPath
         };
         grid.Controls.Add(dll, 0, 5);
         grid.SetColumnSpan(dll, 2);
@@ -91,7 +91,7 @@ internal sealed class ReaderModelForm : Form
             AutoSize = true,
             MaximumSize = new Size(480, 0),
             Padding = new Padding(0, 8, 0, 0),
-            Text = "Port 100 is the common USB convention and is unconfirmed for this DLL. TODO(on-machine): pick the model Windows shows for the ACS CCID reader, probe it, then read a spare card before writing."
+            Text = "連接埠 100 是這類 DLL 常見的 USB 慣例，尚未在此程式確認。TODO(on-machine): 請選擇 Windows 顯示的 ACS CCID 讀卡機型號，先測試，再讀一張備用卡，然後才寫卡。"
         };
         grid.Controls.Add(note, 0, 6);
         grid.SetColumnSpan(note, 2);
@@ -120,8 +120,8 @@ internal sealed class ReaderModelForm : Form
             var readers = _reader.ListConnectedReaders();
             FillModels(readers);
             _result.Text = readers.Count == 0
-                ? "PC/SC reported no readers. On Windows this lists ACS CCID names such as \"ACS CCID USB Reader 0\"."
-                : "PC/SC readers: " + string.Join(", ", readers);
+                ? "PC/SC 沒有回報讀卡機。在 Windows 上會列出 ACS CCID 名稱，例如「ACS CCID USB Reader 0」。"
+                : "PC/SC 讀卡機：" + string.Join(", ", readers);
         }
         catch (Exception ex)
         {
@@ -159,8 +159,8 @@ internal sealed class ReaderModelForm : Form
                 InitType = _initTypeEnabled.Checked ? (int)_initType.Value : null
             };
             _reader.SaveSettings(settings);
-            _result.Text = "Saved " + _reader.SettingsPath;
-            Ui.Info(this, "Reader settings saved.");
+            _result.Text = "已儲存 " + _reader.SettingsPath;
+            Ui.Info(this, "已儲存讀卡機設定。");
         }
         catch (Exception ex)
         {

@@ -9,11 +9,11 @@ public static class BuiltInLayouts
 {
     public static TemplateDocument For(LabelTemplateSlot slot) => slot switch
     {
-        LabelTemplateSlot.EmployeeNameplate1 => Employee(slot, "Employee nameplate 1", includeEnglish: false),
-        LabelTemplateSlot.EmployeeNameplate2 => Employee(slot, "Employee nameplate 2", includeEnglish: true),
-        LabelTemplateSlot.MemberNameplate1 => Member(slot, "Member nameplate 1", includeValidity: false, includeCard: false),
-        LabelTemplateSlot.MemberNameplate2 => Member(slot, "Member nameplate 2", includeValidity: true, includeCard: false),
-        LabelTemplateSlot.MemberNameplate3 => Member(slot, "Member nameplate 3", includeValidity: true, includeCard: true),
+        LabelTemplateSlot.EmployeeNameplate1 => Employee(slot, "員工名牌 1", includeEnglish: false),
+        LabelTemplateSlot.EmployeeNameplate2 => Employee(slot, "員工名牌 2", includeEnglish: true),
+        LabelTemplateSlot.MemberNameplate1 => Member(slot, "會員名牌 1", includeValidity: false, includeCard: false),
+        LabelTemplateSlot.MemberNameplate2 => Member(slot, "會員名牌 2", includeValidity: true, includeCard: false),
+        LabelTemplateSlot.MemberNameplate3 => Member(slot, "會員名牌 3", includeValidity: true, includeCard: true),
         _ => throw new ArgumentOutOfRangeException(nameof(slot))
     };
 

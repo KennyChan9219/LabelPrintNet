@@ -18,14 +18,14 @@ public sealed class LeagerRepository : ILeagerRepository
     {
         var rows = await QueryAsync(LeagerQueries.FindByNumber(_options.Value.Leager, leagNo), cancellationToken)
             .ConfigureAwait(false);
-        return Single(rows, $"member number {leagNo.Trim()}");
+        return Single(rows, $"會員編號 {leagNo.Trim()}");
     }
 
     public async Task<LeagerRecord?> FindByOldCardNumberAsync(string oldCardNo, CancellationToken cancellationToken = default)
     {
         var rows = await QueryAsync(LeagerQueries.FindByOldCardNumber(_options.Value.Leager, oldCardNo), cancellationToken)
             .ConfigureAwait(false);
-        return Single(rows, $"card number {oldCardNo.Trim()}");
+        return Single(rows, $"卡號 {oldCardNo.Trim()}");
     }
 
     public async Task<IReadOnlyList<LeagerRecord>> SearchByNameAsync(
@@ -40,7 +40,7 @@ public sealed class LeagerRepository : ILeagerRepository
     private static LeagerRecord? Single(List<LeagerRecord> rows, string description)
     {
         if (rows.Count > 1)
-            throw new InvalidOperationException($"More than one leager row matches {description}.");
+            throw new InvalidOperationException($"多於一筆 leager 記錄符合{description}。");
         return rows.Count == 0 ? null : rows[0];
     }
 

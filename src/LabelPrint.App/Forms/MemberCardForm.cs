@@ -43,11 +43,11 @@ internal sealed class MemberCardForm : Form
             ScrollBars = ScrollBars.Both,
             WordWrap = false,
             Font = new Font("Consolas", 9F, FontStyle.Regular, GraphicsUnit.Point),
-            Text = "Card memory appears here after Read or Dump."
+            Text = "讀卡或傾印後，卡記憶體內容會顯示在這裡。"
         };
 
         Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point);
-        Text = "Member card";
+        Text = "會員卡";
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.Sizable;
         MinimizeBox = false;
@@ -55,23 +55,23 @@ internal sealed class MemberCardForm : Form
         MinimumSize = new Size(640, 480);
 
         var fields = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 4, Padding = new Padding(12, 12, 12, 0) };
-        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
         fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
+        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
         fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         for (var row = 0; row < 3; row++)
             fields.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        Add(fields, 0, "Member no", txtLeag_No, "Name", txtLeag_Name);
-        Add(fields, 1, "Card no", txtCardNo, "Member code", txtMemberCode);
-        Add(fields, 2, "Valid date", txtValiddate, "Temp member", txtTempMem);
+        Add(fields, 0, "會員編號", txtLeag_No, "會員姓名", txtLeag_Name);
+        Add(fields, 1, "卡號", txtCardNo, "會員代碼", txtMemberCode);
+        Add(fields, 2, "有效日期", txtValiddate, "臨時會員", txtTempMem);
 
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(12, 8, 12, 8) };
-        buttons.Controls.Add(Action("Read card", async () => await ReadAsync(fullDump: false)));
-        buttons.Controls.Add(Action("Dump main memory", async () => await ReadAsync(fullDump: true)));
-        buttons.Controls.Add(Action("Write member number", WriteAsync));
-        buttons.Controls.Add(Action("Print", () => Print(preview: false)));
-        buttons.Controls.Add(Action("Preview", () => Print(preview: true)));
-        var close = new Button { Text = "Close", AutoSize = true, DialogResult = DialogResult.OK };
+        buttons.Controls.Add(Action("讀卡", async () => await ReadAsync(fullDump: false)));
+        buttons.Controls.Add(Action("傾印主記憶體", async () => await ReadAsync(fullDump: true)));
+        buttons.Controls.Add(Action("寫入會員編號", WriteAsync));
+        buttons.Controls.Add(Action("列印", () => Print(preview: false)));
+        buttons.Controls.Add(Action("預覽", () => Print(preview: true)));
+        var close = new Button { Text = "關閉", AutoSize = true, DialogResult = DialogResult.OK };
         buttons.Controls.Add(close);
 
         var hint = new Label
@@ -80,7 +80,7 @@ internal sealed class MemberCardForm : Form
             AutoSize = true,
             Padding = new Padding(12, 0, 12, 8),
             MaximumSize = new Size(740, 0),
-            Text = "TODO(on-machine): member-number offset, PIN, and IC_D600 signatures need a real card and dumpbin /exports before relying on Write. Probe does not send a PIN. A wrong SLE4442 PIN can lock the card."
+            Text = "TODO(on-machine): 寫卡前請先用真實卡片及 dumpbin /exports 確認會員編號偏移、PIN 與 IC_D600 簽名。測試讀卡機不會送出 PIN。SLE4442 密碼錯誤可能鎖卡。"
         };
 
         Controls.Add(_hex);
@@ -128,7 +128,7 @@ internal sealed class MemberCardForm : Form
             var memory = await Task.Run(() => fullDump
                 ? _reader.ReadRange(0, CardCodec.Capacity(_reader.Settings.CardType))
                 : _reader.ReadMemberArea());
-            _hex.Text = $"Offset {memory.Offset}, {memory.Bytes.Length} bytes{Environment.NewLine}{memory.ToHex()}";
+            _hex.Text = $"偏移 {memory.Offset}，{memory.Bytes.Length} 位元組{Environment.NewLine}{memory.ToHex()}";
             if (!string.IsNullOrWhiteSpace(memory.MemberNumber))
             {
                 txtCardNo.Text = memory.MemberNumber;
@@ -157,15 +157,15 @@ internal sealed class MemberCardForm : Form
         var number = txtLeag_No.Text.Trim();
         if (number.Length == 0)
         {
-            Ui.Info(this, "Enter the member number to write.");
+            Ui.Info(this, "請輸入要寫入的會員編號。");
             return;
         }
 
         var access = _options.Value.Card;
         var message =
-            $"Write member number {number} to the card at offset {access.MemberNumberOffset} ({access.MemberNumberLength} bytes)?" +
+            $"要把會員編號 {number} 寫入卡片偏移 {access.MemberNumberOffset}（{access.MemberNumberLength} 位元組）嗎？" +
             Environment.NewLine + Environment.NewLine +
-            "This changes the card. TODO(on-machine): confirm the offset against a dumped Jumping Gym card first.";
+            "這會更改卡片。TODO(on-machine): 寫入前請先用 Jumping Gym 卡片傾印確認偏移。";
         if (!Ui.Confirm(this, message))
             return;
 
@@ -175,7 +175,7 @@ internal sealed class MemberCardForm : Form
         {
             await Task.Run(() => _reader.WriteMemberNumber(number));
             _logger.LogInformation("Wrote member number {Number} to the card", number);
-            Ui.Info(this, "Member number written.");
+            Ui.Info(this, "已寫入會員編號。");
         }
         catch (Exception ex)
         {
@@ -196,12 +196,12 @@ internal sealed class MemberCardForm : Form
             SaveFields();
             if (string.IsNullOrWhiteSpace(_session.Member.Name))
             {
-                Ui.Info(this, "Enter the member name before printing.");
+                Ui.Info(this, "列印前請輸入會員姓名。");
                 return;
             }
 
             var job = _pipeline.Create(_session.MemberTemplate, _session.Member.ToBinding());
-            if (job.UsedFallbackLayout && !Ui.Confirm(this, job.Template.Message + Environment.NewLine + Environment.NewLine + "Print the built-in layout?"))
+            if (job.UsedFallbackLayout && !Ui.Confirm(this, job.Template.Message + Environment.NewLine + Environment.NewLine + "要列印內建版面嗎？"))
                 return;
 
             using var bitmap = NameplateRenderer.Render(job.Layout, job.Binding);

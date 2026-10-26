@@ -38,8 +38,8 @@ internal static class NamePickForm
             FlowDirection = FlowDirection.RightToLeft,
             Padding = new Padding(8)
         };
-        var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Width = 88 };
-        var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Width = 88 };
+        var ok = new Button { Text = "確定", DialogResult = DialogResult.OK, Width = 88 };
+        var cancel = new Button { Text = "取消", DialogResult = DialogResult.Cancel, Width = 88 };
         buttons.Controls.Add(ok);
         buttons.Controls.Add(cancel);
 

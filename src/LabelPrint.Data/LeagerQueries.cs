@@ -6,35 +6,35 @@ public static class LeagerQueries
 {
     public static ParameterizedQuery FindByNumber(LeagerTableOptions options, string leagNo)
     {
-        var key = Require(leagNo, 64, "Member number");
+        var key = Require(leagNo, 64, "會員編號");
         var sql = $"""
             SELECT TOP (2) {SelectList(options)}
-            FROM {Sql.BracketQualified(options.Table, "leager table")}
-            WHERE {Sql.Bracket(options.NumberColumn, "leager number")} = @leagNo
+            FROM {Sql.BracketQualified(options.Table, "leager 資料表")}
+            WHERE {Sql.Bracket(options.NumberColumn, "leager 編號")} = @leagNo
             """;
         return new ParameterizedQuery(sql, [Text("@leagNo", 64, key)]);
     }
 
     public static ParameterizedQuery FindByOldCardNumber(LeagerTableOptions options, string oldCardNo)
     {
-        var key = Require(oldCardNo, 64, "Card number");
+        var key = Require(oldCardNo, 64, "卡號");
         var sql = $"""
             SELECT TOP (2) {SelectList(options)}
-            FROM {Sql.BracketQualified(options.Table, "leager table")}
-            WHERE {Sql.Bracket(options.OldCardNumberColumn, "old card number")} = @oldCardNo
+            FROM {Sql.BracketQualified(options.Table, "leager 資料表")}
+            WHERE {Sql.Bracket(options.OldCardNumberColumn, "舊卡號")} = @oldCardNo
             """;
         return new ParameterizedQuery(sql, [Text("@oldCardNo", 64, key)]);
     }
 
     public static ParameterizedQuery SearchByName(LeagerTableOptions options, string name, int maxRows)
     {
-        var key = Require(name, 100, "Member name");
+        var key = Require(name, 100, "會員姓名");
         var take = Math.Clamp(maxRows, 1, 100);
         var sql = $"""
             SELECT TOP (@maxRows) {SelectList(options)}
-            FROM {Sql.BracketQualified(options.Table, "leager table")}
-            WHERE {Sql.Bracket(options.NameColumn, "leager name")} LIKE @name ESCAPE '\'
-            ORDER BY {Sql.Bracket(options.NumberColumn, "leager number")}
+            FROM {Sql.BracketQualified(options.Table, "leager 資料表")}
+            WHERE {Sql.Bracket(options.NameColumn, "leager 姓名")} LIKE @name ESCAPE '\'
+            ORDER BY {Sql.Bracket(options.NumberColumn, "leager 編號")}
             """;
         return new ParameterizedQuery(sql,
         [
@@ -47,13 +47,13 @@ public static class LeagerQueries
     {
         var parts = new List<string>
         {
-            Column(options.NumberColumn, "Number", "leager number"),
-            Column(options.NameColumn, "Name", "leager name"),
-            Column(options.OldCardNumberColumn, "OldCardNumber", "old card number"),
-            Column(options.ValidDateColumn, "ValidDate", "valid date")
+            Column(options.NumberColumn, "Number", "leager 編號"),
+            Column(options.NameColumn, "Name", "leager 姓名"),
+            Column(options.OldCardNumberColumn, "OldCardNumber", "舊卡號"),
+            Column(options.ValidDateColumn, "ValidDate", "有效日期")
         };
-        AddOptional(parts, options.MemberCodeColumn, "MemberCode", "member code");
-        AddOptional(parts, options.TempMemberColumn, "TempMember", "temp member");
+        AddOptional(parts, options.MemberCodeColumn, "MemberCode", "會員代碼");
+        AddOptional(parts, options.TempMemberColumn, "TempMember", "臨時會員");
         return string.Join(", ", parts);
     }
 
@@ -73,9 +73,9 @@ public static class LeagerQueries
     {
         var trimmed = value.Trim();
         if (trimmed.Length == 0)
-            throw new ArgumentException($"{label} is required.", nameof(value));
+            throw new ArgumentException($"{label}必須填寫。", nameof(value));
         if (trimmed.Length > maxLength)
-            throw new ArgumentException($"{label} is too long.", nameof(value));
+            throw new ArgumentException($"{label}太長。", nameof(value));
         return trimmed;
     }
 }

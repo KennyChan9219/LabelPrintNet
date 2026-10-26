@@ -55,32 +55,32 @@ internal static class IcD600Gateway
         var check = session.Optional<HandleOnlyDelegate>(request.Access.Exports.CheckCard);
         if (check is null)
         {
-            notes.Add("check-card export not found");
+            notes.Add("找不到 CheckCard 匯出");
         }
         else
         {
             var code = check(session.Handle);
             notes.Add(code == request.Access.CheckCardPresentCode
-                ? "card present"
-                : $"check-card returned {code}");
+                ? "已偵測到卡"
+                : $"檢查卡片傳回 {code}");
         }
 
         var status = session.Optional<HandleOnlyDelegate>(request.Access.Exports.Status);
         if (status is not null)
-            notes.Add($"status={status(session.Handle)}");
+            notes.Add($"狀態={status(session.Handle)}");
 
         var countName = request.Settings.CardType == CardType.Sle4442
             ? request.Access.Exports.ReadCount4442
             : request.Access.Exports.ReadCount4428;
         var count = session.Optional<HandleOnlyDelegate>(countName);
         if (count is not null)
-            notes.Add($"readCount={count(session.Handle)}");
+            notes.Add($"讀取次數={count(session.Handle)}");
 
         TryBeep(session, request);
         return new CardProbeResult
         {
             Success = true,
-            Message = $"Reader responded on port {request.Settings.Port} ({request.Settings.CardType}): {string.Join("; ", notes)}. TODO(on-machine): confirm IC_D600 exports and integer widths before writing a card."
+            Message = $"讀卡機已回應，連接埠 {request.Settings.Port}（{request.Settings.CardType}）：{string.Join("；", notes)}。TODO(on-machine): 寫卡前請先確認 IC_D600 匯出名稱與整數寬度。"
         };
     }
 
@@ -140,7 +140,7 @@ internal static class IcD600Gateway
 
                 var libraryPath = Path.Combine(request.BaseDirectory, CardReaderFiles.LibraryFileName);
                 if (!File.Exists(libraryPath))
-                    throw new CardReaderException($"IC_D600.dll was not found at {libraryPath}.");
+                    throw new CardReaderException($"在 {libraryPath} 找不到 IC_D600.dll。");
 
                 library = WindowsNative.LoadOrThrow(libraryPath);
                 var init = Bind<InitCommDelegate>(library, request.Access.Exports.InitComm);
@@ -180,7 +180,7 @@ internal static class IcD600Gateway
             if (code != request.Access.CheckCardPresentCode)
             {
                 throw new CardReaderException(
-                    $"No card, or check-card returned {code}. The present code configured for this desk is {request.Access.CheckCardPresentCode}.",
+                    $"沒有卡片，或檢查卡片傳回 {code}。此櫃檯設定的「有卡」代碼是 {request.Access.CheckCardPresentCode}。",
                     code);
             }
         }
@@ -204,7 +204,7 @@ internal static class IcD600Gateway
                 if (code != request.Access.IoSuccessCode)
                 {
                     throw new CardReaderException(
-                        $"Card PIN was rejected with code {code}. A wrong SLE4442 PIN can lock the card.",
+                        $"卡片 PIN 被拒絕，代碼 {code}。SLE4442 密碼錯誤可能鎖卡。",
                         code);
                 }
             }
@@ -237,7 +237,7 @@ internal static class IcD600Gateway
                 if (code != request.Access.IoSuccessCode)
                 {
                     throw new CardReaderException(
-                        $"{(read ? "Read" : "Write")} failed with code {code}. TODO(on-machine): map this vendor code once the SDK manual is available.",
+                        $"{(read ? "讀取" : "寫入")}失敗，代碼 {code}。TODO(on-machine): 取得 SDK 手冊後再對應這個廠商代碼。",
                         code);
                 }
 
@@ -294,7 +294,7 @@ internal static class IcD600Gateway
                 var initType = Required<InitTypeDelegate>(request.Access.Exports.InitType);
                 var code = initType(Handle, checked((short)type));
                 if (code != request.Access.IoSuccessCode)
-                    throw new CardReaderException($"IC_InitType({type}) failed with code {code}.", code);
+                    throw new CardReaderException($"IC_InitType({type}) 失敗，代碼 {code}。", code);
             }
 
             var chooseName = request.Settings.CardType == CardType.Sle4442
@@ -303,7 +303,7 @@ internal static class IcD600Gateway
             var choose = Required<HandleOnlyDelegate>(chooseName);
             var chosen = choose(Handle);
             if (chosen != request.Access.IoSuccessCode)
-                throw new CardReaderException($"Choosing {request.Settings.CardType} failed with code {chosen}.", chosen);
+                throw new CardReaderException($"選擇 {request.Settings.CardType} 失敗，代碼 {chosen}。", chosen);
         }
 
         private T Required<T>(string name) where T : Delegate
@@ -312,7 +312,7 @@ internal static class IcD600Gateway
             if (bound is null)
             {
                 throw new CardReaderException(
-                    $"IC_D600.dll does not export {name}. Update LabelPrint:Card:Exports after dumpbin /exports IC_D600.dll.");
+                    $"IC_D600.dll 沒有匯出 {name}。請用 dumpbin /exports IC_D600.dll 核對後，更新 LabelPrint:Card:Exports。");
             }
 
             return bound;
@@ -324,7 +324,7 @@ internal static class IcD600Gateway
             if (pointer == IntPtr.Zero)
             {
                 throw new CardReaderException(
-                    $"IC_D600.dll does not export {name}. Update LabelPrint:Card:Exports after dumpbin /exports IC_D600.dll.");
+                    $"IC_D600.dll 沒有匯出 {name}。請用 dumpbin /exports IC_D600.dll 核對後，更新 LabelPrint:Card:Exports。");
             }
 
             return Marshal.GetDelegateForFunctionPointer<T>(pointer);
@@ -335,12 +335,12 @@ internal static class IcD600Gateway
             if (request.Access.InitReturnsHandle)
             {
                 if (code < 0)
-                    throw new CardReaderException($"IC_InitComm failed with code {code}.", code);
+                    throw new CardReaderException($"IC_InitComm 失敗，代碼 {code}。", code);
                 return code;
             }
 
             if (code != request.Access.IoSuccessCode)
-                throw new CardReaderException($"IC_InitComm failed with code {code}.", code);
+                throw new CardReaderException($"IC_InitComm 失敗，代碼 {code}。", code);
             return 0;
         }
     }

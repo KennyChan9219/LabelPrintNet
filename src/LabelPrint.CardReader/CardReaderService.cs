@@ -99,7 +99,7 @@ public sealed class CardReaderService : ICardReader
             return new CardProbeResult
             {
                 Success = false,
-                Message = "IC card access is available when LabelPrint is running on Windows with IC_D600.dll beside the exe."
+                Message = "智能卡只可在 Windows 上使用，請將 IC_D600.dll 放在執行檔旁邊。"
             };
         }
 
@@ -108,7 +108,7 @@ public sealed class CardReaderService : ICardReader
             return new CardProbeResult
             {
                 Success = false,
-                Message = $"IC_D600.dll was not found beside the application ({NativeLibraryPath})."
+                Message = $"在程式旁邊找不到 IC_D600.dll（{NativeLibraryPath}）。"
             };
         }
 
@@ -122,7 +122,7 @@ public sealed class CardReaderService : ICardReader
             {
                 Success = result.Success,
                 Code = result.Code,
-                Message = result.Message + " acsr2032.dll is not beside the application. Copy it next to the exe if the reader DLL depends on it."
+                Message = result.Message + " 程式旁邊沒有 acsr2032.dll。若讀卡機 DLL 依賴它，請複製到執行檔旁邊。"
             };
         }
         catch (CardReaderException ex)
@@ -205,7 +205,7 @@ public sealed class CardReaderService : ICardReader
         if (!encoding.Equals("ASCII", StringComparison.OrdinalIgnoreCase))
         {
             throw new CardReaderException(
-                "Only ASCII member numbers are implemented. TODO(on-machine): confirm the on-card encoding from a dump before adding another one.");
+                "目前只支援 ASCII 會員編號。TODO(on-machine): 請先從傾印確認卡上編碼，再加入其他編碼。");
         }
     }
 
@@ -217,8 +217,8 @@ public sealed class CardReaderService : ICardReader
     };
 
     private CardReaderException MissingLibrary() =>
-        new($"IC_D600.dll was not found beside the application ({NativeLibraryPath}).");
+        new($"在程式旁邊找不到 IC_D600.dll（{NativeLibraryPath}）。");
 
     private static CardReaderException WindowsOnly() =>
-        new("IC card access is available when LabelPrint is running on Windows with IC_D600.dll beside the exe.");
+        new("智能卡只可在 Windows 上使用，請將 IC_D600.dll 放在執行檔旁邊。");
 }

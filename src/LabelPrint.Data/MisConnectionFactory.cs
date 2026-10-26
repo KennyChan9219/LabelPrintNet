@@ -40,14 +40,14 @@ public sealed class MisConnectionFactory
         var value = _options.Value.Mis?.Trim() ?? "";
         if (value.Length == 0)
         {
-            return "MIS SQL connection is not configured. Set ConnectionStrings:Mis with user secrets, appsettings.Local.json beside the exe, or the ConnectionStrings__Mis environment variable.";
+            return "尚未設定 MIS SQL 連線。請用 user secrets、執行檔旁邊的 appsettings.Local.json，或環境變數 ConnectionStrings__Mis 設定 ConnectionStrings:Mis。";
         }
 
         foreach (var placeholder in Placeholders)
         {
             if (value.Contains(placeholder, StringComparison.OrdinalIgnoreCase))
             {
-                return "The MIS connection string still contains a placeholder. Replace it with the desk credentials. Do not commit the password.";
+                return "MIS 連線字串仍然包含佔位符。請改為櫃檯的實際連線資料，不要把密碼提交到版本庫。";
             }
         }
 

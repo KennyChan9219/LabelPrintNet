@@ -86,7 +86,7 @@ public class QueryTests
 
         Assert.False(factory.IsConfigured);
         var error = Assert.Throws<MisNotConfiguredException>(() => factory.CreateConnection());
-        Assert.Contains("placeholder", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("佔位", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

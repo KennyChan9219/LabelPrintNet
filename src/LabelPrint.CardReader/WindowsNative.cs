@@ -36,7 +36,7 @@ internal static class WindowsNative
             return handle;
 
         throw new CardReaderException(
-            $"LoadLibrary failed for {path}: {new Win32Exception(Marshal.GetLastWin32Error()).Message}");
+            $"LoadLibrary 無法載入 {path}：{new Win32Exception(Marshal.GetLastWin32Error()).Message}");
     }
 }
 
@@ -49,7 +49,7 @@ internal static class PcscReaders
     {
         var rc = WindowsNative.SCardEstablishContext(0, IntPtr.Zero, IntPtr.Zero, out var context);
         if (rc != 0)
-            throw new CardReaderException($"SCardEstablishContext failed with 0x{rc:X8}.", rc);
+            throw new CardReaderException($"SCardEstablishContext 失敗，代碼 0x{rc:X8}。", rc);
 
         try
         {
@@ -58,14 +58,14 @@ internal static class PcscReaders
             if (rc == NoReaders)
                 return [];
             if (rc != 0)
-                throw new CardReaderException($"SCardListReaders failed with 0x{rc:X8}.", rc);
+                throw new CardReaderException($"SCardListReaders 失敗，代碼 0x{rc:X8}。", rc);
 
             var buffer = new char[Math.Max(length, 1)];
             rc = WindowsNative.SCardListReaders(context, null, buffer, ref length);
             if (rc == NoReaders)
                 return [];
             if (rc != 0)
-                throw new CardReaderException($"SCardListReaders failed with 0x{rc:X8}.", rc);
+                throw new CardReaderException($"SCardListReaders 失敗，代碼 0x{rc:X8}。", rc);
 
             return new string(buffer).Split('\0', StringSplitOptions.RemoveEmptyEntries);
         }
