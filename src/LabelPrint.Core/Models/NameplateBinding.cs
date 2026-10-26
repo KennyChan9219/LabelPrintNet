@@ -16,6 +16,12 @@ public static class NameplateFields
     public const string ValidDate = "ValidDate";
     public const string TempMember = "TempMember";
 
+    /// <summary>BrssCom.Document field filled by <c>DoPrint</c> / <c>DoPrintEmp</c>.</summary>
+    public const string MemID = "MemID";
+
+    /// <summary>BrssCom.Document field filled by <c>DoPrint</c> / <c>DoPrintEmp</c>.</summary>
+    public const string MemName = "MemName";
+
     public static IReadOnlyList<string> All { get; } =
     [
         StaffNo,
@@ -29,7 +35,9 @@ public static class NameplateFields
         CardNo,
         MemberCode,
         ValidDate,
-        TempMember
+        TempMember,
+        MemID,
+        MemName
     ];
 }
 
@@ -59,7 +67,9 @@ public sealed class NameplateBinding
             [NameplateFields.EmpName] = printedName.Trim(),
             [NameplateFields.EmpEnglishName] = englishName.Trim(),
             [NameplateFields.EmpChineseName] = chineseName.Trim(),
-            [NameplateFields.EmpId] = id.Trim()
+            [NameplateFields.EmpId] = id.Trim(),
+            [NameplateFields.MemID] = staffNumber.Trim(),
+            [NameplateFields.MemName] = printedName.Trim()
         });
     }
 
@@ -80,7 +90,28 @@ public sealed class NameplateBinding
             [NameplateFields.CardNo] = card,
             [NameplateFields.MemberCode] = memberCode.Trim(),
             [NameplateFields.ValidDate] = validDate.Trim(),
-            [NameplateFields.TempMember] = tempMember.Trim()
+            [NameplateFields.TempMember] = tempMember.Trim(),
+            [NameplateFields.MemID] = (string.IsNullOrWhiteSpace(memberCode) ? number : memberCode).Trim(),
+            [NameplateFields.MemName] = name.Trim()
+        });
+    }
+
+    /// <summary>The three BrssCom fields the VB6 print path actually sets.</summary>
+    public static NameplateBinding ForLabel(string memId, string memName, string validDate)
+    {
+        var id = memId.Trim();
+        var name = memName.Trim();
+        var valid = validDate.Trim();
+        return new NameplateBinding(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [NameplateFields.MemID] = id,
+            [NameplateFields.MemName] = name,
+            [NameplateFields.ValidDate] = valid,
+            [NameplateFields.StaffNo] = id,
+            [NameplateFields.EmpName] = name,
+            [NameplateFields.LeagNo] = id,
+            [NameplateFields.LeagName] = name,
+            [NameplateFields.MemberCode] = id
         });
     }
 }

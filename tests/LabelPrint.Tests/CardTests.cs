@@ -43,23 +43,17 @@ public class CardTests
         try
         {
             var path = Path.Combine(directory.FullName, "CardReader.config");
-            var settings = new CardReaderSettings
-            {
-                Model = "ACS ACR39U-CCID",
-                Port = 100,
-                CardType = CardType.Sle4428,
-                InitType = 0
-            };
+            var settings = new CardReaderSettings { Model = "ACR38U" };
 
             CardReaderConfigStore.Save(path, settings);
             var text = File.ReadAllText(path);
             var loaded = CardReaderConfigStore.Load(path);
 
-            Assert.Equal("ACS ACR39U-CCID", loaded.Model);
-            Assert.Equal(100, loaded.Port);
-            Assert.Equal(CardType.Sle4428, loaded.CardType);
-            Assert.Equal(0, loaded.InitType);
-            Assert.DoesNotContain("Password=", text, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal("ACR38U", loaded.Model);
+            Assert.Equal(101, loaded.Port);
+            Assert.Equal(16, loaded.InitType);
+            Assert.Equal(CardReaderModelNames.Rd600P, CardReaderConfigStore.Parse("not-a-reader").Model);
+            Assert.DoesNotContain("Password", text, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
@@ -71,10 +65,7 @@ public class CardTests
     public void Reader_config_refuses_a_password_entry()
     {
         var error = Assert.Throws<InvalidOperationException>(() => CardReaderConfigStore.Parse("""
-            [Reader]
-            Model=ACS CCID USB Reader
-            Port=100
-            CardType=SLE4442
+            RD600P
             Password=super-secret
             """));
 
@@ -87,7 +78,7 @@ public class CardTests
     {
         var text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "CardReader.config"));
 
-        Assert.Contains("ACS CCID USB Reader", text);
+        Assert.Contains("RD600P", text);
         Assert.DoesNotContain("Password=", text, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -132,16 +123,11 @@ public class CardTests
                 Options.Create(new LabelPrintOptions()),
                 directory.FullName,
                 Path.Combine(directory.FullName, "override"));
-            reader.SaveSettings(new CardReaderSettings
-            {
-                Model = "ACS ACR38U-CCID",
-                Port = 100,
-                CardType = CardType.Sle4442
-            });
+            reader.SaveSettings(new CardReaderSettings { Model = "ACR38U" });
 
             reader.Reload();
 
-            Assert.Equal("ACS ACR38U-CCID", reader.Settings.Model);
+            Assert.Equal("ACR38U", reader.Settings.Model);
             Assert.Equal(CardType.Sle4442, reader.Settings.CardType);
             Assert.Contains("CardReader.config", reader.SettingsPath);
         }

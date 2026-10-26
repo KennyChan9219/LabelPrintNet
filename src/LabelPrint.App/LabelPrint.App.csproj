@@ -16,11 +16,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>jumping-gym-labelprint-1e7c9a4b</UserSecretsId>
     <Version>1.6.0</Version>
-    <InformationalVersion>1.06-net8</InformationalVersion>
+    <InformationalVersion>1.6.0-net8</InformationalVersion>
     <Product>LabelPrint</Product>
     <Company>Jumping Gym U.S.A</Company>
     <AssemblyTitle>LabelPrint</AssemblyTitle>
-    <Description>LabelPrint 1.06 rebuilt as a .NET 8 Windows Forms application.</Description>
+    <Description>LabelPrint 1.6 (CardPrint4) rebuilt as a .NET 8 Windows Forms application.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />

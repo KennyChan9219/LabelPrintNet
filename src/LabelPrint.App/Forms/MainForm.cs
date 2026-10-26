@@ -1,755 +1,642 @@
 using LabelPrint.Data;
-using Microsoft.Extensions.DependencyInjection;
+using LabelPrint.Printing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace LabelPrint;
 
-/// <summary>Legacy Form1. Employee and member nameplates, plus the menu into the card and reader forms.</summary>
+/// <summary>
+/// Startup form. CardPrint4.vbp sets Startup = frmMemberCard. Employee badges are the same form,
+/// shown when 員工 - 工作証 is selected. There is no separate Form1.
+/// </summary>
 internal sealed class MainForm : Form
 {
-    private readonly DeskSession _session;
-    private readonly ILeagerRepository _members;
+    private readonly ILeagerRepository _leager;
     private readonly IMtUserRepository _employees;
-    private readonly INameplatePrintPipeline _pipeline;
-    private readonly ILabelTemplateCatalog _catalog;
-    private readonly ICardReader _reader;
     private readonly MisConnectionFactory _database;
+    private readonly ILabelTemplateCatalog _catalog;
+    private readonly INameplatePrintPipeline _pipeline;
+    private readonly ICardReader _reader;
     private readonly IOptions<LabelPrintOptions> _options;
-    private readonly IServiceProvider _services;
     private readonly ILogger<MainForm> _logger;
-    private readonly TextBox txtStaffNo;
-    private readonly TextBox txtEmpName;
-    private readonly Label lblEmpEnglish;
-    private readonly Button cmdGetEmp;
-    private readonly Button cmdPrintEmp;
-    private readonly Button cmdPreviewEmp;
-    private readonly RadioButton optEmp1;
-    private readonly RadioButton optEmp2;
-    private readonly PictureBox picEmp;
-    private readonly TextBox txtLeag_No;
-    private readonly TextBox txtLeag_Name;
-    private readonly TextBox txtCardNo;
-    private readonly TextBox txtMemberCode;
-    private readonly TextBox txtValiddate;
-    private readonly TextBox txtTempMem;
-    private readonly Button cmdGetMem;
-    private readonly Button cmdRead;
-    private readonly Button cmdPrint;
-    private readonly Button cmdPreview;
-    private readonly RadioButton optMember1;
-    private readonly RadioButton optMember2;
-    private readonly RadioButton optMember3;
-    private readonly PictureBox picLabel1;
-    private readonly PictureBox picLabel2;
-    private readonly Label lblMemName;
-    private readonly Label lblMemName2;
-    private readonly ToolStripStatusLabel _status;
-    private readonly ToolStripStatusLabel _statusDb;
-    private readonly ToolStripStatusLabel _statusReader;
-    private readonly ToolStripStatusLabel _statusTemplate;
-    private readonly SplitContainer _split;
-    private bool _loading;
+    private readonly System.Windows.Forms.Timer _timer = new() { Interval = 5000 };
+
+    private readonly RadioButton optMember = new() { Text = "一般會員", AutoSize = true };
+    private readonly RadioButton optTrial = new() { Text = "試玩會員", AutoSize = true };
+    private readonly RadioButton optEmployee = new() { Text = "員工 - 工作証", AutoSize = true };
+    private readonly RadioButton optGoodLuck = new() { Text = "Good Luck 卡", AutoSize = true };
+
+    private readonly Label txtCardNo = FieldLabel();
+    private readonly Label txtMemberCode = FieldLabel();
+    private readonly Label txtLeag_Name = FieldLabel();
+    private readonly Label txtValiddate = FieldLabel();
+    private readonly Label txtGoodLuckDate = FieldLabel();
+    private readonly TextBox txtTempMem0 = new() { Width = 280 };
+    private readonly TextBox txtTempMem1 = new() { Width = 280 };
+    private readonly TextBox txtTempMem2 = new() { Width = 280, Text = LabelChoice.TrialDateTemplate };
+    private readonly Button cmdRead = new() { Text = "ＩＣ咭編號：", AutoSize = true, Width = 120 };
+    private readonly Button cmdPrint = new() { Text = "列印 (&P)", Width = 96, Height = 32, Enabled = false };
+    private readonly Button cmdCancel = new() { Text = "離開 (&E)", Width = 96, Height = 32 };
+
+    private readonly Panel picLabel1 = new() { BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Width = 280, Height = 78 };
+    private readonly Panel picLabel2 = new() { BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Width = 280, Height = 78 };
+    private readonly Label lblMemID = PreviewLabel();
+    private readonly Label lblMemName = PreviewLabel();
+    private readonly Label lblValidUntil = PreviewLabel();
+    private readonly Label lblValidDate = PreviewLabel();
+    private readonly Label lblMemID2 = PreviewLabel();
+    private readonly Label lblMemName2 = PreviewLabel();
+    private readonly Label lblValidUntil2 = PreviewLabel();
+    private readonly Label lblValidDate2 = PreviewLabel();
+
+    private readonly Panel fraMemCard = new() { Dock = DockStyle.Fill };
+    private readonly Panel fraEmpCard = new() { Dock = DockStyle.Fill, Visible = false };
+    private readonly TextBox txtCardNum = new() { Width = 180 };
+    private readonly TextBox txtStaffNo = new() { Width = 280 };
+    private readonly TextBox txtEmpName = new() { Width = 360 };
+    private readonly Button cmdPrintEmp = new() { Text = "列印", Width = 96, Height = 32 };
+
+    private readonly ToolStripStatusLabel _branch = new("分店");
+    private readonly ToolStripStatusLabel _databaseName = new("未設定") { AutoSize = false, Width = 90 };
+    private readonly ToolStripStatusLabel _readerStatus = new("") { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
+    private readonly ToolStripStatusLabel _readerModel = new("讀卡器型號: RD600P") { AutoSize = false, Width = 180 };
+
     private bool _busy;
+    private string _transferCard = "";
 
     public MainForm(
-        DeskSession session,
-        ILeagerRepository members,
+        ILeagerRepository leager,
         IMtUserRepository employees,
-        INameplatePrintPipeline pipeline,
-        ILabelTemplateCatalog catalog,
-        ICardReader reader,
         MisConnectionFactory database,
+        ILabelTemplateCatalog catalog,
+        INameplatePrintPipeline pipeline,
+        ICardReader reader,
         IOptions<LabelPrintOptions> options,
-        IServiceProvider services,
         ILogger<MainForm> logger)
     {
-        _session = session;
-        _members = members;
+        _leager = leager;
         _employees = employees;
-        _pipeline = pipeline;
-        _catalog = catalog;
-        _reader = reader;
         _database = database;
+        _catalog = catalog;
+        _pipeline = pipeline;
+        _reader = reader;
         _options = options;
-        _services = services;
         _logger = logger;
 
-        Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point);
-        Text = "LabelPrint 1.06";
+        Text = DeskMessages.AppTitle;
+        Font = new Font("Microsoft JhengHei", 9.75F, FontStyle.Regular, GraphicsUnit.Point);
+        FormBorderStyle = FormBorderStyle.FixedSingle;
+        MaximizeBox = false;
+        MinimizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(1080, 740);
-        MinimumSize = new Size(960, 640);
-        AutoScaleMode = AutoScaleMode.Dpi;
+        ClientSize = new Size(720, 460);
 
-        txtStaffNo = Box();
-        txtEmpName = Box();
-        lblEmpEnglish = new Label { AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 8, 8, 4) };
-        cmdGetEmp = Button("查詢");
-        cmdPrintEmp = Button("列印員工");
-        cmdPreviewEmp = Button("預覽");
-        optEmp1 = Radio("員工名牌 1", true);
-        optEmp2 = Radio("員工名牌 2", false);
-        picEmp = Preview();
-        txtLeag_No = Box();
-        txtLeag_Name = Box();
-        txtCardNo = Box();
-        txtMemberCode = Box();
-        txtValiddate = Box();
-        txtTempMem = Box();
-        cmdGetMem = Button("查詢");
-        cmdRead = Button("讀卡");
-        cmdPrint = Button("列印會員");
-        cmdPreview = Button("預覽");
-        optMember1 = Radio("會員名牌 1", true);
-        optMember2 = Radio("會員名牌 2", false);
-        optMember3 = Radio("會員名牌 3", false);
-        picLabel1 = Preview();
-        picLabel2 = Preview();
-        lblMemName = Caption("會員姓名");
-        lblMemName2 = Caption("會員姓名");
-        _status = new ToolStripStatusLabel("就緒") { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
-        _statusDb = StatusCell(160);
-        _statusReader = StatusCell(340);
-        _statusTemplate = StatusCell(120);
-        _split = new SplitContainer
+        var menu = new MenuStrip();
+        var readerMenu = new ToolStripMenuItem("選擇讀卡器");
+        readerMenu.Click += (_, _) => OpenReader();
+        menu.Items.Add(readerMenu);
+        MainMenuStrip = menu;
+
+        var modes = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill,
-            Orientation = Orientation.Horizontal
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            Padding = new Padding(12, 8, 12, 4),
+            WrapContents = false
         };
+        modes.Controls.Add(new Label { Text = "列印 :", AutoSize = true, Padding = new Padding(0, 6, 8, 0) });
+        modes.Controls.Add(optMember);
+        modes.Controls.Add(optTrial);
+        modes.Controls.Add(optEmployee);
+        modes.Controls.Add(optGoodLuck);
 
-        var menu = BuildMenu();
-        BuildEmployee(_split.Panel1);
-        BuildMember(_split.Panel2);
+        BuildMember();
+        BuildEmployee();
+        var body = new Panel { Dock = DockStyle.Fill };
+        body.Controls.Add(fraEmpCard);
+        body.Controls.Add(fraMemCard);
+
         var status = new StatusStrip();
-        status.Items.AddRange([_status, _statusDb, _statusReader, _statusTemplate]);
-        Controls.Add(_split);
+        status.Items.AddRange([_branch, _databaseName, _readerStatus, _readerModel]);
+
+        Controls.Add(body);
+        Controls.Add(modes);
         Controls.Add(status);
         Controls.Add(menu);
-        MainMenuStrip = menu;
-        Wire();
-    }
 
-    protected override void OnLoad(EventArgs e)
-    {
-        base.OnLoad(e);
-        try
+        optMember.CheckedChanged += (_, _) => ApplyMode();
+        optTrial.CheckedChanged += (_, _) => ApplyMode();
+        optEmployee.CheckedChanged += (_, _) => ApplyMode();
+        optGoodLuck.CheckedChanged += (_, _) => ApplyMode();
+        cmdRead.Click += async (_, _) =>
         {
-            _split.SplitterDistance = 250;
-        }
-        catch (InvalidOperationException)
-        {
-            // The splitter rejects a distance before the handle has a real height. The default split still works.
-        }
-
-        RefreshPreviews();
-        RefreshStatus();
-    }
-
-    private MenuStrip BuildMenu()
-    {
-        var menu = new MenuStrip();
-        var file = new ToolStripMenuItem("檔案(&F)");
-        file.DropDownItems.Add("結束(&X)", null, (_, _) => Close());
-
-        var card = new ToolStripMenuItem("智能卡(&C)");
-        card.DropDownItems.Add("會員卡(&M)...", null, (_, _) => OpenMemberCard());
-        card.DropDownItems.Add("讀卡(&R)", null, async (_, _) => await RunBusy(ReadCardAsync));
-
-        var settings = new ToolStripMenuItem("設定(&S)");
-        settings.DropDownItems.Add("讀卡機型號(&E)...", null, (_, _) => OpenReader());
-        settings.DropDownItems.Add("測試 MIS 連線(&T)", null, async (_, _) => await RunBusy(TestMisAsync));
-
-        var help = new ToolStripMenuItem("說明(&H)");
-        help.DropDownItems.Add("關於 LabelPrint(&A)", null, (_, _) => ShowAbout());
-
-        menu.Items.AddRange([file, card, settings, help]);
-        return menu;
-    }
-
-    private void BuildEmployee(Control parent)
-    {
-        var group = new GroupBox { Text = "員工名牌", Dock = DockStyle.Fill, Padding = new Padding(8) };
-        var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1 };
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
-        grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-
-        var fields = FieldGrid();
-        AddRow(fields, 0, Label("員工編號"), txtStaffNo, cmdGetEmp);
-        AddSpan(fields, 1, Label("員工姓名"), txtEmpName);
-        AddSpan(fields, 2, Label("英文姓名"), lblEmpEnglish);
-        var radios = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, WrapContents = false };
-        radios.Controls.Add(optEmp1);
-        radios.Controls.Add(optEmp2);
-        fields.Controls.Add(radios, 0, 3);
-        fields.SetColumnSpan(radios, 3);
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, WrapContents = false };
-        buttons.Controls.Add(cmdPrintEmp);
-        buttons.Controls.Add(cmdPreviewEmp);
-        fields.Controls.Add(buttons, 0, 4);
-        fields.SetColumnSpan(buttons, 3);
-
-        grid.Controls.Add(fields, 0, 0);
-        grid.Controls.Add(picEmp, 1, 0);
-        group.Controls.Add(grid);
-        parent.Controls.Add(group);
-    }
-
-    private void BuildMember(Control parent)
-    {
-        var group = new GroupBox { Text = "會員名牌", Dock = DockStyle.Fill, Padding = new Padding(8) };
-        var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4 };
-        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        var fields = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 4, RowCount = 4 };
-        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
-        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
-        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        for (var row = 0; row < 4; row++)
-            fields.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        fields.Controls.Add(Label("會員編號"), 0, 0);
-        fields.Controls.Add(txtLeag_No, 1, 0);
-        fields.Controls.Add(cmdGetMem, 2, 0);
-        fields.Controls.Add(Label("會員姓名"), 0, 1);
-        fields.Controls.Add(txtLeag_Name, 1, 1);
-        fields.SetColumnSpan(txtLeag_Name, 3);
-        fields.Controls.Add(Label("卡號"), 0, 2);
-        fields.Controls.Add(txtCardNo, 1, 2);
-        fields.Controls.Add(Label("會員代碼"), 2, 2);
-        fields.Controls.Add(txtMemberCode, 3, 2);
-        fields.Controls.Add(Label("有效日期"), 0, 3);
-        fields.Controls.Add(txtValiddate, 1, 3);
-        fields.Controls.Add(Label("臨時會員"), 2, 3);
-        fields.Controls.Add(txtTempMem, 3, 3);
-
-        var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, WrapContents = false };
-        var memberRadios = new Panel { Width = 430, Height = 28 };
-        optMember1.Location = new Point(0, 4);
-        optMember2.Location = new Point(140, 4);
-        optMember3.Location = new Point(280, 4);
-        memberRadios.Controls.Add(optMember1);
-        memberRadios.Controls.Add(optMember2);
-        memberRadios.Controls.Add(optMember3);
-        actions.Controls.Add(memberRadios);
-        actions.Controls.Add(cmdRead);
-        actions.Controls.Add(cmdPrint);
-        actions.Controls.Add(cmdPreview);
-
-        var previews = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1 };
-        previews.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        previews.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        previews.Controls.Add(picLabel1, 0, 0);
-        previews.Controls.Add(picLabel2, 1, 0);
-
-        var captions = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Height = 24 };
-        captions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        captions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        captions.Controls.Add(lblMemName, 0, 0);
-        captions.Controls.Add(lblMemName2, 1, 0);
-
-        grid.Controls.Add(fields, 0, 0);
-        grid.Controls.Add(actions, 0, 1);
-        grid.Controls.Add(previews, 0, 2);
-        grid.Controls.Add(captions, 0, 3);
-        group.Controls.Add(grid);
-        parent.Controls.Add(group);
-    }
-
-    private void Wire()
-    {
-        cmdGetEmp.Click += async (_, _) => await RunBusy(LookupEmployeeAsync);
-        cmdGetMem.Click += async (_, _) => await RunBusy(LookupMemberAsync);
-        cmdRead.Click += async (_, _) => await RunBusy(ReadCardAsync);
-        cmdPrintEmp.Click += (_, _) => PrintEmployee(preview: false);
-        cmdPreviewEmp.Click += (_, _) => PrintEmployee(preview: true);
-        cmdPrint.Click += (_, _) => PrintMember(preview: false);
-        cmdPreview.Click += (_, _) => PrintMember(preview: true);
-        txtStaffNo.KeyDown += (_, e) => Activate(e, cmdGetEmp);
-        txtLeag_No.KeyDown += (_, e) => Activate(e, cmdGetMem);
-        txtStaffNo.TextChanged += (_, _) =>
-        {
-            if (_loading)
-                return;
-            _session.Employee.EnglishName = "";
-            _session.Employee.ChineseName = "";
-            _session.Employee.Id = "";
-            lblEmpEnglish.Text = "";
-            RefreshPreviews();
+            ClearMember();
+            await ReadCardAsync();
         };
-        foreach (var box in new Control[] { txtEmpName, txtLeag_No, txtLeag_Name, txtCardNo, txtMemberCode, txtValiddate, txtTempMem })
-            box.TextChanged += (_, _) => { if (!_loading) RefreshPreviews(); };
-        foreach (var radio in new[] { optEmp1, optEmp2, optMember1, optMember2, optMember3 })
-            radio.CheckedChanged += (_, _) => { if (!_loading) RefreshPreviews(); };
+        cmdPrint.Click += (_, _) => PrintMember();
+        cmdCancel.Click += (_, _) => Close();
+        txtTempMem0.TextChanged += (_, _) => UpdatePreviewTrial();
+        txtTempMem1.TextChanged += (_, _) => UpdatePreviewTrial();
+        txtTempMem2.TextChanged += (_, _) => UpdatePreviewTrial();
+        txtTempMem2.Enter += (_, _) => txtTempMem2.Select(2, 2);
+        txtCardNum.KeyDown += async (_, args) =>
+        {
+            if (args.KeyCode == Keys.Enter)
+            {
+                args.SuppressKeyPress = true;
+                await LookupEmployeeAsync();
+            }
+        };
+
+        _timer.Tick += async (_, _) =>
+        {
+            if (_busy || _transferCard.Length == 0)
+                return;
+            _timer.Stop();
+            try
+            {
+                await ReadCardAsync();
+            }
+            finally
+            {
+                if (!IsDisposed)
+                    _timer.Start();
+            }
+        };
+
+        optMember.Checked = true;
+        ApplyMode();
+        ClearMember();
+        RefreshChrome();
+        _timer.Start();
     }
 
-    private async Task LookupEmployeeAsync()
+    private void BuildMember()
     {
-        var staffNo = txtStaffNo.Text.Trim();
-        var name = txtEmpName.Text.Trim();
-        if (staffNo.Length == 0 && name.Length == 0)
+        var fields = new TableLayoutPanel
         {
-            Ui.Info(this, "請輸入員工編號或姓名。");
-            return;
-        }
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            ColumnCount = 2,
+            Padding = new Padding(16, 8, 16, 0)
+        };
+        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
+        fields.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        AddMemberRow(fields, 0, cmdRead, txtCardNo);
+        AddMemberRow(fields, 1, Caption("　會員編號："), txtMemberCode);
+        AddMemberRow(fields, 2, Caption("　會員名稱："), txtLeag_Name);
+        var value = new Panel { Height = 28, Width = 400 };
+        txtValiddate.Dock = DockStyle.Fill;
+        txtGoodLuckDate.Dock = DockStyle.Fill;
+        txtGoodLuckDate.Text = LabelChoice.GoodLuckFormDate;
+        txtGoodLuckDate.Visible = false;
+        value.Controls.Add(txtGoodLuckDate);
+        value.Controls.Add(txtValiddate);
+        AddMemberRow(fields, 3, Caption("有效日期至："), value);
 
-        if (staffNo.Length > 0)
+        var trial = new TableLayoutPanel
         {
-            var record = await _employees.FindByStaffNumberAsync(staffNo);
-            if (record is null)
-            {
-                Ui.Info(this, $"找不到員工編號 {staffNo}。");
-                return;
-            }
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            ColumnCount = 2,
+            Padding = new Padding(16, 0, 16, 0),
+            Visible = false,
+            Name = "trial"
+        };
+        trial.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
+        trial.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        AddMemberRow(trial, 0, Caption("請輸入會員編號"), txtTempMem0);
+        AddMemberRow(trial, 1, Caption("請輸入會員名稱"), txtTempMem1);
+        AddMemberRow(trial, 2, Caption("有效日期至："), txtTempMem2);
 
-            ShowEmployee(record);
-            return;
-        }
-
-        var rows = await _employees.SearchByNameAsync(name);
-        if (rows.Count == 0)
+        FillPreview(picLabel1, lblMemID, lblMemName, lblValidUntil, lblValidDate);
+        FillPreview(picLabel2, lblMemID2, lblMemName2, lblValidUntil2, lblValidDate2);
+        picLabel2.Visible = false;
+        var preview = new GroupBox
         {
-            Ui.Info(this, $"找不到符合「{name}」的員工。");
-            return;
-        }
+            Text = "預覽",
+            Dock = DockStyle.Top,
+            Height = 120,
+            Padding = new Padding(8)
+        };
+        var pics = new FlowLayoutPanel { Dock = DockStyle.Fill };
+        pics.Controls.Add(picLabel1);
+        pics.Controls.Add(picLabel2);
+        preview.Controls.Add(pics);
 
-        var index = rows.Count == 1
-            ? 0
-            : NamePickForm.Choose(this, "員工", rows.Select(row => $"{row.StaffNumber}  {row.DisplayName}").ToList());
-        if (index is int chosen)
-            ShowEmployee(rows[chosen]);
+        var buttons = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            Padding = new Padding(16, 8, 16, 8)
+        };
+        buttons.Controls.Add(cmdPrint);
+        buttons.Controls.Add(cmdCancel);
+
+        fraMemCard.Controls.Add(buttons);
+        fraMemCard.Controls.Add(preview);
+        fraMemCard.Controls.Add(trial);
+        fraMemCard.Controls.Add(fields);
     }
 
-    private async Task LookupMemberAsync()
+    private void BuildEmployee()
     {
-        var number = txtLeag_No.Text.Trim();
-        var card = txtCardNo.Text.Trim();
-        var name = txtLeag_Name.Text.Trim();
-        if (number.Length == 0 && card.Length == 0 && name.Length == 0)
+        var grid = new TableLayoutPanel
         {
-            Ui.Info(this, "請輸入會員編號、卡號或姓名。");
-            return;
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            ColumnCount = 3,
+            Padding = new Padding(16, 12, 16, 0)
+        };
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        var title = new Label
+        {
+            Text = "列印工作証Label",
+            AutoSize = true,
+            Font = new Font(Font, FontStyle.Bold),
+            Margin = new Padding(0, 0, 0, 12)
+        };
+        grid.Controls.Add(title, 0, 0);
+        grid.SetColumnSpan(title, 3);
+        var lookup = new Button { Text = "確定", Width = 88, Height = 32 };
+        lookup.Click += async (_, _) => await LookupEmployeeAsync();
+        var cardLine = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
+        var hint = new Label { Text = "(請拍卡/輸入卡背號碼)", AutoSize = true, Margin = new Padding(8, 8, 0, 0) };
+        cardLine.Controls.Add(txtCardNum);
+        cardLine.Controls.Add(lookup);
+        cardLine.Controls.Add(hint);
+        grid.Controls.Add(new Label { Text = "卡號碼", AutoSize = true, Margin = new Padding(0, 8, 8, 4) }, 0, 1);
+        grid.Controls.Add(cardLine, 1, 1);
+        grid.SetColumnSpan(cardLine, 2);
+        grid.Controls.Add(new Label { Text = "員工編號", AutoSize = true, Margin = new Padding(0, 8, 8, 4) }, 0, 2);
+        grid.Controls.Add(txtStaffNo, 1, 2);
+        grid.Controls.Add(new Label { Text = "員工名稱", AutoSize = true, Margin = new Padding(0, 8, 8, 4) }, 0, 3);
+        grid.Controls.Add(txtEmpName, 1, 3);
+        grid.SetColumnSpan(txtEmpName, 2);
+
+        var buttons = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(16, 16, 16, 8) };
+        var leave = new Button { Text = "離開", Width = 96, Height = 32 };
+        leave.Click += (_, _) => Close();
+        cmdPrintEmp.Click += (_, _) => PrintEmployee();
+        buttons.Controls.Add(cmdPrintEmp);
+        buttons.Controls.Add(leave);
+
+        fraEmpCard.Controls.Add(buttons);
+        fraEmpCard.Controls.Add(grid);
+    }
+
+    private void ApplyMode()
+    {
+        var trial = optTrial.Checked;
+        var employee = optEmployee.Checked;
+        var goodLuck = optGoodLuck.Checked;
+        fraEmpCard.Visible = employee;
+        fraMemCard.Visible = !employee;
+        fraMemCard.Controls.OfType<TableLayoutPanel>().First(panel => panel.Name == "trial").Visible = trial;
+        cmdRead.Visible = !trial;
+        txtCardNo.Visible = !trial;
+        txtMemberCode.Visible = !trial;
+        txtLeag_Name.Visible = !trial;
+        txtValiddate.Visible = !trial && !goodLuck;
+        txtGoodLuckDate.Visible = goodLuck && !trial;
+        if (trial)
+        {
+            cmdPrint.Enabled = true;
+            UpdatePreviewTrial();
+        }
+        else if (!employee)
+        {
+            UpdatePreviewMember();
         }
 
-        if (number.Length > 0)
-        {
-            var record = await _members.FindByNumberAsync(number);
-            if (record is null)
-            {
-                Ui.Info(this, $"找不到會員編號 {number}。");
-                return;
-            }
-
-            ShowMember(record);
-            return;
-        }
-
-        if (card.Length > 0)
-        {
-            var record = await _members.FindByOldCardNumberAsync(card);
-            if (record is null)
-            {
-                Ui.Info(this, $"找不到卡號 {card}。");
-                return;
-            }
-
-            ShowMember(record);
-            return;
-        }
-
-        var rows = await _members.SearchByNameAsync(name);
-        if (rows.Count == 0)
-        {
-            Ui.Info(this, $"找不到符合「{name}」的會員。");
-            return;
-        }
-
-        var index = rows.Count == 1
-            ? 0
-            : NamePickForm.Choose(this, "會員", rows.Select(row => $"{row.Number}  {row.Name}").ToList());
-        if (index is int chosen)
-            ShowMember(rows[chosen]);
+        if (employee)
+            txtCardNum.Focus();
     }
 
     private async Task ReadCardAsync()
     {
-        var memory = await Task.Run(_reader.ReadMemberArea);
-        var memberNumber = memory.MemberNumber ?? "";
-        _loading = true;
-        try
-        {
-            txtCardNo.Text = memberNumber;
-            if (memberNumber.Length > 0)
-                txtLeag_No.Text = memberNumber;
-        }
-        finally
-        {
-            _loading = false;
-        }
-
-        SetStatus($"已讀取偏移 {memory.Offset} 的 {memory.Bytes.Length} 位元組。");
-        _logger.LogInformation("Read member area, {Length} bytes at offset {Offset}", memory.Bytes.Length, memory.Offset);
-        if (memberNumber.Length > 0)
-            await LookupMemberAsync();
-        else
-            RefreshPreviews();
-    }
-
-    private async Task TestMisAsync()
-    {
-        await _database.CanConnectAsync();
-        Ui.Info(this, "MIS 已接受連線。");
-        SetStatus("MIS 連線成功。");
-    }
-
-    private void PrintEmployee(bool preview)
-    {
-        try
-        {
-            PullUi();
-            if (string.IsNullOrWhiteSpace(_session.Employee.PrintedName))
-            {
-                Ui.Info(this, "列印前請輸入員工姓名。");
-                return;
-            }
-
-            var job = _pipeline.Create(_session.EmployeeTemplate, _session.Employee.ToBinding());
-            if (!AcceptJob(job))
-                return;
-
-            using var bitmap = NameplateRenderer.Render(job.Layout, job.Binding);
-            if (preview)
-                NameplatePrinter.Preview(this, bitmap, job.Layout, job.DocumentName, _options.Value.PrinterName);
-            else
-                NameplatePrinter.Print(bitmap, job.Layout, job.DocumentName, job.Copies, _options.Value.PrinterName);
-
-            SetStatus(preview ? "已關閉員工名牌預覽。" : "已將員工名牌送到打印機。");
-        }
-        catch (Exception ex)
-        {
-            ShowError(ex);
-        }
-    }
-
-    private void PrintMember(bool preview)
-    {
-        try
-        {
-            PullUi();
-            if (string.IsNullOrWhiteSpace(_session.Member.Name))
-            {
-                Ui.Info(this, "列印前請輸入會員姓名。");
-                return;
-            }
-
-            var job = _pipeline.Create(_session.MemberTemplate, _session.Member.ToBinding());
-            if (!AcceptJob(job))
-                return;
-
-            using var bitmap = NameplateRenderer.Render(job.Layout, job.Binding);
-            if (preview)
-                NameplatePrinter.Preview(this, bitmap, job.Layout, job.DocumentName, _options.Value.PrinterName);
-            else
-                NameplatePrinter.Print(bitmap, job.Layout, job.DocumentName, job.Copies, _options.Value.PrinterName);
-
-            SetStatus(preview ? "已關閉會員名牌預覽。" : "已將會員名牌送到打印機。");
-        }
-        catch (Exception ex)
-        {
-            ShowError(ex);
-        }
-    }
-
-    private bool AcceptJob(NameplateJob job)
-    {
-        if (!job.UsedFallbackLayout)
-            return true;
-
-        return Ui.Confirm(this, job.Template.Message + Environment.NewLine + Environment.NewLine + "要列印內建版面嗎？");
-    }
-
-    private void ShowEmployee(EmployeeRecord record)
-    {
-        _loading = true;
-        try
-        {
-            _session.Employee.Apply(record);
-            txtStaffNo.Text = record.StaffNumber;
-            txtEmpName.Text = record.DisplayName;
-            lblEmpEnglish.Text = record.EnglishName;
-        }
-        finally
-        {
-            _loading = false;
-        }
-
-        RefreshPreviews();
-        SetStatus($"已載入員工 {record.StaffNumber}。");
-    }
-
-    private void ShowMember(LeagerRecord record)
-    {
-        _loading = true;
-        try
-        {
-            _session.Member.Apply(record);
-            PushMemberFields();
-        }
-        finally
-        {
-            _loading = false;
-        }
-
-        RefreshPreviews();
-        SetStatus($"已載入會員 {record.Number}。");
-    }
-
-    private void OpenMemberCard()
-    {
-        PullUi();
-        using var form = ActivatorUtilities.CreateInstance<MemberCardForm>(_services);
-        form.ShowDialog(this);
-        _loading = true;
-        try
-        {
-            PushMemberFields();
-        }
-        finally
-        {
-            _loading = false;
-        }
-
-        RefreshPreviews();
-        RefreshStatus();
-    }
-
-    private void OpenReader()
-    {
-        using var form = ActivatorUtilities.CreateInstance<ReaderModelForm>(_services);
-        form.ShowDialog(this);
-        RefreshStatus();
-    }
-
-    private void ShowAbout()
-    {
-        var dll = _reader.NativeLibraryPresent ? "已找到" : "找不到";
-        var dependency = _reader.DependencyLibraryPresent ? "已找到" : "找不到";
-        Ui.Info(this,
-            "LabelPrint 1.06" + Environment.NewLine +
-            "Jumping Gym U.S.A" + Environment.NewLine +
-            ".NET 8 重寫的 VB6 櫃檯程式。" + Environment.NewLine + Environment.NewLine +
-            "名牌範本：" + Environment.NewLine + _catalog.SearchPathDescription + Environment.NewLine + Environment.NewLine +
-            "讀卡機設定檔：" + _reader.SettingsPath + Environment.NewLine +
-            "IC_D600.dll：" + dll + Environment.NewLine +
-            "acsr2032.dll：" + dependency + Environment.NewLine +
-            "記錄檔：" + FileLog.Path);
-    }
-
-    private void PullUi()
-    {
-        _session.Employee.StaffNumber = txtStaffNo.Text.Trim();
-        _session.Employee.PrintedName = txtEmpName.Text.Trim();
-        _session.EmployeeTemplate = optEmp2.Checked
-            ? LabelTemplateSlot.EmployeeNameplate2
-            : LabelTemplateSlot.EmployeeNameplate1;
-        _session.Member.Number = txtLeag_No.Text.Trim();
-        _session.Member.Name = txtLeag_Name.Text.Trim();
-        _session.Member.CardNumber = txtCardNo.Text.Trim();
-        _session.Member.MemberCode = txtMemberCode.Text.Trim();
-        _session.Member.ValidDate = txtValiddate.Text.Trim();
-        _session.Member.TempMember = txtTempMem.Text.Trim();
-        _session.MemberTemplate = SelectedMemberSlot();
-    }
-
-    private void PushMemberFields()
-    {
-        txtLeag_No.Text = _session.Member.Number;
-        txtLeag_Name.Text = _session.Member.Name;
-        txtCardNo.Text = _session.Member.CardNumber;
-        txtMemberCode.Text = _session.Member.MemberCode;
-        txtValiddate.Text = _session.Member.ValidDate;
-        txtTempMem.Text = _session.Member.TempMember;
-        optMember1.Checked = _session.MemberTemplate == LabelTemplateSlot.MemberNameplate1;
-        optMember2.Checked = _session.MemberTemplate == LabelTemplateSlot.MemberNameplate2;
-        optMember3.Checked = _session.MemberTemplate == LabelTemplateSlot.MemberNameplate3;
-    }
-
-    private void RefreshPreviews()
-    {
-        PullUi();
-        ShowPreview(picEmp, null, _pipeline.Create(_session.EmployeeTemplate, _session.Employee.ToBinding()));
-        var selected = _pipeline.Create(_session.MemberTemplate, _session.Member.ToBinding());
-        var companionSlot = _session.MemberTemplate switch
-        {
-            LabelTemplateSlot.MemberNameplate1 => LabelTemplateSlot.MemberNameplate2,
-            LabelTemplateSlot.MemberNameplate2 => LabelTemplateSlot.MemberNameplate1,
-            _ => LabelTemplateSlot.MemberNameplate1
-        };
-        var companion = _pipeline.Create(companionSlot, _session.Member.ToBinding());
-        ShowPreview(picLabel1, lblMemName, selected);
-        ShowPreview(picLabel2, lblMemName2, companion);
-    }
-
-    private static void ShowPreview(PictureBox box, Label? caption, NameplateJob job)
-    {
-        var bitmap = NameplateRenderer.Render(job.Layout, job.Binding);
-        var previous = box.Image;
-        box.Image = bitmap;
-        previous?.Dispose();
-        if (caption is null)
-            return;
-
-        var note = job.Template.Status == TemplateLoadStatus.Loaded ? "" : "（內建版面）";
-        var name = job.Binding.Get(NameplateFields.LeagName);
-        caption.Text = (string.IsNullOrWhiteSpace(name) ? "會員姓名" : name) + note;
-    }
-
-    private void RefreshStatus()
-    {
-        var templates = _catalog.LoadAll();
-        var ready = templates.Count(result => result.Status == TemplateLoadStatus.Loaded);
-        _statusDb.Text = _database.IsConfigured ? "MIS：已設定" : "MIS：未設定";
-        _statusReader.Text = _reader.Settings.Model + (_reader.NativeLibraryPresent ? "  已找到 DLL" : "  找不到 DLL");
-        _statusTemplate.Text = $"範本 {ready}/{templates.Count}";
-    }
-
-    private LabelTemplateSlot SelectedMemberSlot()
-    {
-        if (optMember2.Checked)
-            return LabelTemplateSlot.MemberNameplate2;
-        if (optMember3.Checked)
-            return LabelTemplateSlot.MemberNameplate3;
-        return LabelTemplateSlot.MemberNameplate1;
-    }
-
-    private async Task RunBusy(Func<Task> action)
-    {
         if (_busy)
             return;
-
         _busy = true;
-        UseWaitCursor = true;
+        cmdRead.Enabled = false;
         try
         {
-            await action();
+            SetReaderStatus("正在讀取資料...");
+            CardIdRead read;
+            try
+            {
+                read = await Task.Run(_reader.ReadCardId).ConfigureAwait(true);
+            }
+            catch (Exception ex) when (ex is CardReaderException or IOException or InvalidOperationException)
+            {
+                _logger.LogError(ex, "Card read failed");
+                SetReaderStatus(ex.Message);
+                Ui.Warn(this, ex.Message, Text);
+                return;
+            }
+
+            if (!read.CardPresent || CardCodec.IsBlankCardId(read.CardId) || read.CardId.Length == 0)
+            {
+                SetReaderStatus("ＩＣ卡不存在");
+                return;
+            }
+
+            await ShowMemberAsync(read.CardId).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
-            ShowError(ex);
+            _logger.LogError(ex, "Member lookup failed");
+            SetReaderStatus(ex.Message);
+            Ui.Error(this, ex.Message);
         }
         finally
         {
             _busy = false;
-            UseWaitCursor = false;
-            RefreshStatus();
+            cmdRead.Enabled = true;
         }
     }
 
-    private void ShowError(Exception ex)
+    private async Task ShowMemberAsync(string cardId)
     {
-        _logger.LogError(ex, "Desk operation failed");
-        Ui.Error(this, ex.Message);
-    }
+        var count = await _leager.CountActiveByCardAsync(cardId).ConfigureAwait(true);
+        if (count >= 1)
+        {
+            var row = await _leager.FindLabelByCardAsync(cardId).ConfigureAwait(true);
+            if (row is null || string.IsNullOrWhiteSpace(row.Number))
+            {
+                ClearMember();
+                SetReaderStatus("此會員不存在");
+                return;
+            }
 
-    private void SetStatus(string text) => _status.Text = text;
-
-    private static void Activate(KeyEventArgs args, Button button)
-    {
-        if (args.KeyCode != Keys.Enter)
+            txtCardNo.Text = cardId;
+            txtMemberCode.Text = row.OldCardNumber;
+            txtLeag_Name.Text = row.Name;
+            txtValiddate.Text = row.ValidDate;
+            UpdatePreviewMember();
+            cmdPrint.Enabled = true;
+            SetReaderStatus("讀取成功!");
             return;
-        args.SuppressKeyPress = true;
-        button.PerformClick();
+        }
+
+        if (!string.Equals(_transferCard, cardId, StringComparison.OrdinalIgnoreCase))
+        {
+            await _leager.RequestCardTransferAsync(cardId).ConfigureAwait(true);
+            _transferCard = cardId;
+            SetReaderStatus("會員正在過場...");
+            return;
+        }
+
+        SetReaderStatus("正在讀取資料...");
     }
 
-    private static TextBox Box() => new()
+    private void PrintMember()
     {
-        Dock = DockStyle.Fill,
-        Margin = new Padding(0, 4, 8, 4),
-        MinimumSize = new Size(80, 23)
-    };
+        var goodLuck = optGoodLuck.Checked;
+        var trial = optTrial.Checked;
+        string memId;
+        string memName;
+        string validSource;
+        if (optMember.Checked || goodLuck)
+        {
+            if (string.IsNullOrWhiteSpace(txtMemberCode.Text))
+            {
+                Ui.Warn(this, "請先讀取會員卡資料", Text);
+                return;
+            }
 
-    private static Button Button(string text) => new()
+            memId = txtMemberCode.Text;
+            memName = txtLeag_Name.Text;
+            validSource = txtValiddate.Text;
+        }
+        else if (trial)
+        {
+            if (string.IsNullOrWhiteSpace(txtTempMem0.Text))
+            {
+                Ui.Warn(this, "請輸入會員編號!", Text);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtTempMem1.Text))
+            {
+                Ui.Warn(this, "請輸入會員名稱!", Text);
+                return;
+            }
+
+            if (txtTempMem2.Text.StartsWith("20__", StringComparison.Ordinal) || txtTempMem2.Text.Length != 10)
+            {
+                Ui.Warn(this, "請輸入有效日期年份!", Text);
+                return;
+            }
+
+            if (!LabelChoice.TrialDateIsReady(txtTempMem2.Text))
+            {
+                Ui.Warn(this, "年份必須為數字!", Text);
+                return;
+            }
+
+            memId = txtTempMem0.Text;
+            memName = txtTempMem1.Text;
+            validSource = txtTempMem2.Text;
+        }
+        else
+        {
+            return;
+        }
+
+        var slot = LabelChoice.ForMember(goodLuck, memName);
+        if (!TemplateIsPresent(slot))
+            return;
+
+        var valid = LabelChoice.PrintedValidDate(goodLuck, validSource);
+        PrintSlot(slot, NameplateBinding.ForLabel(memId, memName, valid));
+        cmdPrint.Enabled = true;
+    }
+
+    private async Task LookupEmployeeAsync()
     {
-        Text = text,
-        AutoSize = true,
-        Margin = new Padding(0, 4, 8, 4),
-        Padding = new Padding(8, 2, 8, 2)
-    };
+        var card = txtCardNum.Text.Trim();
+        if (card.Length == 0)
+        {
+            Ui.Warn(this, "請輸入卡號碼!", Text);
+            txtCardNum.Focus();
+            return;
+        }
 
-    private static RadioButton Radio(string text, bool on) => new()
+        if (!card.All(static character => character is >= '0' and <= '9'))
+        {
+            Ui.Warn(this, "卡號碼必定為數字!", Text);
+            return;
+        }
+
+        txtStaffNo.Text = "";
+        txtEmpName.Text = "";
+        try
+        {
+            var row = await _employees.FindByCardIdAsync(card).ConfigureAwait(true);
+            if (row is null)
+            {
+                cmdPrintEmp.Enabled = false;
+                Ui.Warn(this, "找不到此卡號!" + Environment.NewLine + card, Text);
+                return;
+            }
+
+            txtStaffNo.Text = row.StaffNumber;
+            txtEmpName.Text = row.EnglishName;
+            cmdPrintEmp.Enabled = true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Employee lookup failed");
+            cmdPrintEmp.Enabled = false;
+            Ui.Error(this, ex.Message);
+        }
+    }
+
+    private void PrintEmployee()
     {
-        Text = text,
-        AutoSize = true,
-        Checked = on,
-        Margin = new Padding(0, 6, 16, 0)
-    };
+        var slot = LabelChoice.ForEmployee(txtEmpName.Text);
+        if (!TemplateIsPresent(slot))
+            return;
+        PrintSlot(slot, NameplateBinding.ForLabel(txtStaffNo.Text, txtEmpName.Text, ""));
+    }
 
-    private static PictureBox Preview() => new()
+    private bool TemplateIsPresent(LabelTemplateSlot slot)
     {
-        Dock = DockStyle.Fill,
-        BackColor = Color.White,
-        BorderStyle = BorderStyle.FixedSingle,
-        SizeMode = PictureBoxSizeMode.Zoom,
-        Margin = new Padding(4)
-    };
+        var loaded = _catalog.Load(slot);
+        if (loaded.Status != TemplateLoadStatus.Missing)
+            return true;
 
-    private static Label Label(string text) => new()
+        Ui.Warn(this, "找不到檔案:" + Path.Combine(AppContext.BaseDirectory, slot.FileName()), Text);
+        return false;
+    }
+
+    private void PrintSlot(LabelTemplateSlot slot, NameplateBinding binding)
     {
-        Text = text,
-        AutoSize = true,
-        Anchor = AnchorStyles.Left,
-        Margin = new Padding(0, 8, 8, 4)
-    };
+        try
+        {
+            var job = _pipeline.Create(slot, binding);
+            if (job.UsedFallbackLayout &&
+                !Ui.Confirm(this, job.Template.Message + Environment.NewLine + Environment.NewLine + "要列印內建版面嗎？"))
+            {
+                return;
+            }
 
-    private static Label Caption(string text) => new()
+            using var bitmap = NameplateRenderer.Render(job.Layout, job.Binding);
+            NameplatePrinter.Print(bitmap, job.Layout, job.DocumentName, job.Copies, _options.Value.PrinterName);
+            SetReaderStatus("已將名牌送到打印機。");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Print failed");
+            Ui.Error(this, ex.Message);
+        }
+    }
+
+    private void UpdatePreviewMember()
     {
-        Text = text,
-        AutoSize = true,
-        Dock = DockStyle.Fill,
-        Margin = new Padding(4, 0, 4, 0)
-    };
+        var name = txtLeag_Name.Text.Trim();
+        var showLong = optGoodLuck.Checked || name.Length >= LabelChoice.ShortNameLength;
+        picLabel1.Visible = !showLong;
+        picLabel2.Visible = showLong;
+        var until = optGoodLuck.Checked ? LabelChoice.GoodLuckValidUntil : LabelChoice.StandardValidUntil;
+        var date = LabelChoice.PrintedValidDate(optGoodLuck.Checked, txtValiddate.Text);
+        SetPair(txtMemberCode.Text.Trim(), name, until, date);
+    }
 
-    private static ToolStripStatusLabel StatusCell(int width) => new()
+    private void UpdatePreviewTrial()
+    {
+        var name = txtTempMem1.Text.Trim();
+        var showLong = name.Length >= LabelChoice.ShortNameLength;
+        picLabel1.Visible = !showLong;
+        picLabel2.Visible = showLong;
+        SetPair(txtTempMem0.Text.Trim(), name, LabelChoice.StandardValidUntil, LabelChoice.PrintedYear(txtTempMem2.Text));
+    }
+
+    private void SetPair(string id, string name, string until, string date)
+    {
+        lblMemID.Text = id;
+        lblMemName.Text = name;
+        lblValidUntil.Text = until;
+        lblValidDate.Text = date;
+        lblMemID2.Text = id;
+        lblMemName2.Text = name;
+        lblValidUntil2.Text = until;
+        lblValidDate2.Text = date;
+    }
+
+    private void ClearMember()
+    {
+        txtCardNo.Text = "";
+        txtMemberCode.Text = "";
+        txtLeag_Name.Text = "";
+        txtValiddate.Text = "";
+        SetPair("", "", "", "");
+        cmdPrint.Enabled = optTrial.Checked;
+    }
+
+    private void OpenReader()
+    {
+        using var form = new ReaderModelForm(_reader);
+        if (form.ShowDialog(this) == DialogResult.OK)
+            RefreshChrome();
+    }
+
+    private void RefreshChrome()
+    {
+        _databaseName.Text = _database.MemberDatabaseLabel;
+        _readerModel.Text = "讀卡器型號: " + _reader.Settings.Model;
+    }
+
+    private void SetReaderStatus(string text) => _readerStatus.Text = text;
+
+    private static void AddMemberRow(TableLayoutPanel grid, int row, Control caption, Control value)
+    {
+        caption.Margin = new Padding(0, 6, 8, 4);
+        value.Margin = new Padding(0, 4, 0, 4);
+        grid.Controls.Add(caption, 0, row);
+        grid.Controls.Add(value, 1, row);
+    }
+
+    private static Label Caption(string text) => new() { Text = text, AutoSize = true };
+
+    private static Label FieldLabel() => new()
     {
         AutoSize = false,
-        Width = width,
-        BorderSides = ToolStripStatusLabelBorderSides.Left,
+        Width = 360,
+        Height = 24,
         TextAlign = ContentAlignment.MiddleLeft
     };
 
-    private static TableLayoutPanel FieldGrid()
+    private static Label PreviewLabel() => new()
     {
-        var grid = new TableLayoutPanel
+        AutoSize = false,
+        Height = 20,
+        Width = 250,
+        Font = new Font("Arial", 9F, FontStyle.Bold, GraphicsUnit.Point),
+        BackColor = Color.White
+    };
+
+    private static void FillPreview(Panel picture, Label id, Label name, Label until, Label date)
+    {
+        var stack = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
-            AutoSize = true,
-            ColumnCount = 3,
-            RowCount = 5
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            Padding = new Padding(8, 4, 4, 4),
+            BackColor = Color.White
         };
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
-        for (var row = 0; row < 5; row++)
-            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        return grid;
-    }
-
-    private static void AddRow(TableLayoutPanel grid, int row, Control label, Control field, Control extra)
-    {
-        grid.Controls.Add(label, 0, row);
-        grid.Controls.Add(field, 1, row);
-        grid.Controls.Add(extra, 2, row);
-    }
-
-    private static void AddSpan(TableLayoutPanel grid, int row, Control label, Control field)
-    {
-        grid.Controls.Add(label, 0, row);
-        grid.Controls.Add(field, 1, row);
-        grid.SetColumnSpan(field, 2);
+        stack.Controls.Add(id);
+        stack.Controls.Add(name);
+        var line = new FlowLayoutPanel { AutoSize = true, WrapContents = false, BackColor = Color.White };
+        until.Width = 90;
+        date.Width = 150;
+        line.Controls.Add(until);
+        line.Controls.Add(date);
+        stack.Controls.Add(line);
+        picture.Controls.Add(stack);
     }
 }

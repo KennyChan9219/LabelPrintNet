@@ -75,7 +75,7 @@ public sealed class CardReaderService : ICardReader
 
     public void SaveSettings(CardReaderSettings settings)
     {
-        CardReaderConfigStore.Validate(settings);
+        settings = CardReaderConfigStore.ForModel(settings.Model);
         var besideExe = Path.Combine(_baseDirectory, CardReaderConfigStore.FileName);
         try
         {
@@ -161,6 +161,14 @@ public sealed class CardReaderService : ICardReader
         };
     }
 
+    public CardIdRead ReadCardId()
+    {
+        if (!OperatingSystem.IsWindows())
+            throw WindowsOnly();
+
+        return ReadCardIdWindows();
+    }
+
     public void WriteMemberNumber(string memberNumber)
     {
         var access = _options.Value.Card;
@@ -178,6 +186,45 @@ public sealed class CardReaderService : ICardReader
 
     [SupportedOSPlatform("windows")]
     private IReadOnlyList<string> ListConnectedReadersWindows() => PcscReaders.List();
+
+    [SupportedOSPlatform("windows")]
+    private CardIdRead ReadCardIdWindows()
+    {
+        var failed = DeskMessages.OpenFailed(Settings.Model, ShiyuRunning());
+        try
+        {
+            if (Settings.Model.Equals(CardReaderModelNames.Acr30U, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new CardReaderException(
+                    failed + Environment.NewLine + Environment.NewLine +
+                    "TODO(on-machine): ACR30U 經 ACSR2032.DLL（AC_Open / AC_StartSession）讀偏移 248 的 5 個位元組。");
+            }
+
+            if (Settings.Model.Equals(CardReaderModelNames.Acr38U, StringComparison.OrdinalIgnoreCase))
+                return PcscReaders.ReadAcr38();
+
+            if (!NativeLibraryPresent)
+                throw MissingLibrary();
+
+            return IcD600Gateway.ReadRd600P(CreateRequest(failed));
+        }
+        catch (CardReaderException ex) when (ex.Message == "reader-open-failed")
+        {
+            throw new CardReaderException(failed, ex.NativeCode);
+        }
+    }
+
+    private static bool ShiyuRunning()
+    {
+        try
+        {
+            return System.Diagnostics.Process.GetProcessesByName("shiyu").Length > 0;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
 
     [SupportedOSPlatform("windows")]
     private CardProbeResult ProbeWindows() => IcD600Gateway.Probe(CreateRequest());
@@ -209,11 +256,12 @@ public sealed class CardReaderService : ICardReader
         }
     }
 
-    private CardIoRequest CreateRequest() => new()
+    private CardIoRequest CreateRequest(string? openFailedMessage = null) => new()
     {
         Settings = _settings,
         Access = _options.Value.Card,
-        BaseDirectory = _baseDirectory
+        BaseDirectory = _baseDirectory,
+        OpenFailedMessage = openFailedMessage ?? DeskMessages.OpenFailed(_settings.Model, false)
     };
 
     private CardReaderException MissingLibrary() =>

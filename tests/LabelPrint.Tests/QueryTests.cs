@@ -110,4 +110,47 @@ public class QueryTests
         using var connection = factory.CreateConnection();
         Assert.Contains("Database=MIS", connection.ConnectionString);
     }
+
+    [Fact]
+    public void Card_lookup_keeps_the_ic_id_in_a_parameter()
+    {
+        var count = LeagerQueries.CountActiveByCard(new LeagerTableOptions(), "AB'CD");
+        var number = LeagerQueries.FindNumberByCard(new LeagerTableOptions(), "AB'CD");
+        var move = LeagerQueries.RequestTransfer("AB'CD");
+
+        Assert.Contains("[netflag] = 'Y'", count.CommandText);
+        Assert.Contains("[CardNo] = @card", count.CommandText);
+        Assert.DoesNotContain("AB'CD", count.CommandText);
+        Assert.Contains("[CardNo] = @card", number.CommandText);
+        Assert.Contains("CONVERT(varchar(10)", LeagerQueries.FindLabelByNumber(new LeagerTableOptions(), "1").CommandText);
+        Assert.Contains("net_c_interface", move.CommandText);
+        Assert.DoesNotContain("AB'CD", move.CommandText);
+        Assert.Equal("Move by Card Print", move.Parameters.Single(parameter => parameter.Name == "@note").Value);
+    }
+
+    [Fact]
+    public void Employee_card_lookup_uses_mu_id_and_a_parameter()
+    {
+        var query = MtUserQueries.FindByCardId(new MtUserTableOptions(), "10086");
+
+        Assert.Contains("[MU_ID] = @id", query.CommandText);
+        Assert.Contains("[mu_enable] = 1", query.CommandText);
+        Assert.Contains("[mu_entryDate] DESC", query.CommandText);
+        Assert.DoesNotContain("10086", query.CommandText);
+        Assert.Equal("10086", query.Parameters.Single().Value);
+    }
+
+    [Fact]
+    public void Name_length_chooses_the_vb6_template()
+    {
+        Assert.Equal(LabelTemplateSlot.MemberNameplate1, LabelChoice.ForMember(goodLuck: false, "陳大文"));
+        Assert.Equal(LabelTemplateSlot.MemberNameplate2, LabelChoice.ForMember(goodLuck: false, new string('名', 15)));
+        Assert.Equal(LabelTemplateSlot.MemberNameplate3, LabelChoice.ForMember(goodLuck: true, "短"));
+        Assert.Equal(LabelTemplateSlot.EmployeeNameplate1, LabelChoice.ForEmployee("Chan"));
+        Assert.Equal(LabelTemplateSlot.EmployeeNameplate2, LabelChoice.ForEmployee(new string('A', 15)));
+        Assert.Equal("2026", LabelChoice.PrintedYear("2026/01/02"));
+        Assert.Equal(LabelChoice.GoodLuckValidDate, LabelChoice.PrintedValidDate(goodLuck: true, "1999/01/01"));
+        Assert.Equal("0102030405", CardCodec.FormatCardId([0x01, 0x02, 0x03, 0x04, 0x05]));
+        Assert.True(CardCodec.IsBlankCardId("ffffffffff"));
+    }
 }

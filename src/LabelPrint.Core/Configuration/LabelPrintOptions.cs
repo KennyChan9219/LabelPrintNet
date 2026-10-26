@@ -4,8 +4,15 @@ public sealed class MisConnectionOptions
 {
     public const string SectionName = "ConnectionStrings";
 
-    /// <summary>MIS SQL Server connection string. Empty unless user secrets, a local file, or the environment set it.</summary>
+    /// <summary>Employee <c>MT_USER</c> connection. Empty unless user secrets, a local file, or the environment set it.</summary>
     public string Mis { get; set; } = "";
+
+    /// <summary>
+    /// Member <c>leager</c> connection. Empty uses <see cref="Mis"/>.
+    /// The VB6 app opened ODBC DSN SHIYUDB for members and a separate MIS login for staff cards.
+    /// Neither password is stored in this program.
+    /// </summary>
+    public string Shiyu { get; set; } = "";
 }
 
 public sealed class LabelPrintOptions
@@ -39,6 +46,12 @@ public sealed class LeagerTableOptions
 
     public string ValidDateColumn { get; set; } = "validdate";
 
+    /// <summary>IC card id column used by <c>syReadMember</c>.</summary>
+    public string CardNoColumn { get; set; } = "CardNo";
+
+    /// <summary>Branch flag. The VB6 count requires <c>netflag = 'Y'</c>.</summary>
+    public string NetFlagColumn { get; set; } = "netflag";
+
     /// <summary>Blank until the MIS column is confirmed. The desk can still type a member code.</summary>
     public string MemberCodeColumn { get; set; } = "";
 
@@ -48,7 +61,7 @@ public sealed class LeagerTableOptions
 
 public sealed class MtUserTableOptions
 {
-    public string Table { get; set; } = "MT_USER";
+    public string Table { get; set; } = "dbo.MT_USER";
 
     public string StaffNumberColumn { get; set; } = "MU_StaffNo";
 
@@ -57,6 +70,10 @@ public sealed class MtUserTableOptions
     public string ChineseNameColumn { get; set; } = "MU_CHIName";
 
     public string IdColumn { get; set; } = "MU_ID";
+
+    public string EnableColumn { get; set; } = "mu_enable";
+
+    public string EntryDateColumn { get; set; } = "mu_entryDate";
 }
 
 public sealed class CardOptions
@@ -64,9 +81,10 @@ public sealed class CardOptions
     /// <summary>SLE4442 is 3 bytes, SLE4428 is 2. Empty skips the PIN call. Never commit a real PIN.</summary>
     public string PasswordHex { get; set; } = "";
 
-    public int MemberNumberOffset { get; set; } = 32;
+    /// <summary>frmMemberCard reads 5 bytes at offset 248 via <c>IC_Read_Hex</c> / APDU P2=248.</summary>
+    public int MemberNumberOffset { get; set; } = 248;
 
-    public int MemberNumberLength { get; set; } = 16;
+    public int MemberNumberLength { get; set; } = 5;
 
     public string MemberNumberEncoding { get; set; } = "ASCII";
 

@@ -11,18 +11,54 @@ public enum CardType
 /// <summary>Reader model, port, and card family stored in <c>CardReader.config</c>. No secrets.</summary>
 public sealed class CardReaderSettings
 {
-    public string Model { get; set; } = "ACS CCID USB Reader";
+    public string Model { get; set; } = CardReaderModelNames.Rd600P;
 
-    /// <summary>
-    /// Vendor port number. 100 is the usual USB convention in this family of DLLs and is unconfirmed
-    /// for the Jumping Gym copy of IC_D600.dll.
-    /// </summary>
-    public int Port { get; set; } = 100;
+    /// <summary>frmMemberCard calls <c>IC_InitComm(101)</c> for RD600P. The comment in that sub says 100; the call uses 101.</summary>
+    public int Port { get; set; } = 101;
 
     public CardType CardType { get; set; } = CardType.Sle4442;
 
-    /// <summary>When set, probe/read/write call <c>IC_InitType</c> with this value.</summary>
-    public int? InitType { get; set; }
+    /// <summary>RD600P calls <c>IC_InitType(icdev, 16)</c> before the hex read.</summary>
+    public int? InitType { get; set; } = 16;
+}
+
+public static class CardReaderModelNames
+{
+    public const string Acr30U = "ACR30U";
+
+    public const string Acr38U = "ACR38U";
+
+    public const string Rd600P = "RD600P";
+
+    public static IReadOnlyList<string> Known { get; } = [Acr30U, Acr38U, Rd600P];
+
+    /// <summary>Same rule as <c>UCase$(Left$(file, 6))</c>. Anything else is RD600P.</summary>
+    public static string Normalize(string? token)
+    {
+        var text = (token ?? "").Trim().ToUpperInvariant();
+        var six = text.Length >= 6 ? text[..6] : text;
+        if (six == Acr30U)
+            return Acr30U;
+        if (six == Acr38U)
+            return Acr38U;
+        return Rd600P;
+    }
+}
+
+/// <summary>Result of the frmMemberCard card-id read. The id is 10 hex characters, not an ASCII member number.</summary>
+public sealed class CardIdRead
+{
+    public bool CardPresent { get; init; }
+
+    public string CardId { get; init; } = "";
+
+    public static CardIdRead Absent() => new();
+
+    public static CardIdRead Present(string cardId) => new()
+    {
+        CardPresent = true,
+        CardId = cardId.Trim()
+    };
 }
 
 public sealed class CardProbeResult
@@ -59,6 +95,26 @@ public sealed class CardMemory
 /// <summary>Pure SLE4428/4442 field encoding. Offsets are configuration, not hardcoded production dumps.</summary>
 public static class CardCodec
 {
+    public const int CardIdOffset = 248;
+
+    public const int CardIdLength = 5;
+
+    public const string BlankCardId = "FFFFFFFFFF";
+
+    public const string Acr38ReaderName = "ACS CCID USB Reader 0";
+
+    public static string FormatCardId(ReadOnlySpan<byte> bytes)
+    {
+        var take = Math.Min(bytes.Length, CardIdLength);
+        var builder = new StringBuilder(take * 2);
+        for (var i = 0; i < take; i++)
+            builder.Append(bytes[i].ToString("X2", System.Globalization.CultureInfo.InvariantCulture));
+        return builder.ToString();
+    }
+
+    public static bool IsBlankCardId(string? hex) =>
+        string.Equals(hex?.Trim(), BlankCardId, StringComparison.OrdinalIgnoreCase);
+
     public static int Capacity(CardType type) => type switch
     {
         CardType.Sle4442 => 256,

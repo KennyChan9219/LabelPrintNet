@@ -31,6 +31,13 @@ public sealed class MtUserRepository : IMtUserRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<EmployeeRecord?> FindByCardIdAsync(string cardId, CancellationToken cancellationToken = default)
+    {
+        var rows = await QueryAsync(MtUserQueries.FindByCardId(_options.Value.MtUser, cardId), cancellationToken)
+            .ConfigureAwait(false);
+        return rows.Count == 0 ? null : rows[0];
+    }
+
     private async Task<List<EmployeeRecord>> QueryAsync(ParameterizedQuery query, CancellationToken cancellationToken)
     {
         var timeout = Math.Clamp(_options.Value.CommandTimeoutSeconds, 1, 300);

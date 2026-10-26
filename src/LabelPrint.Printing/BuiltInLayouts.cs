@@ -9,38 +9,26 @@ public static class BuiltInLayouts
 {
     public static TemplateDocument For(LabelTemplateSlot slot) => slot switch
     {
-        LabelTemplateSlot.EmployeeNameplate1 => Employee(slot, "員工名牌 1", includeEnglish: false),
-        LabelTemplateSlot.EmployeeNameplate2 => Employee(slot, "員工名牌 2", includeEnglish: true),
-        LabelTemplateSlot.MemberNameplate1 => Member(slot, "會員名牌 1", includeValidity: false, includeCard: false),
-        LabelTemplateSlot.MemberNameplate2 => Member(slot, "會員名牌 2", includeValidity: true, includeCard: false),
-        LabelTemplateSlot.MemberNameplate3 => Member(slot, "會員名牌 3", includeValidity: true, includeCard: true),
+        LabelTemplateSlot.EmployeeNameplate1 => Plate(slot, "員工名牌 1", includeValid: false),
+        LabelTemplateSlot.EmployeeNameplate2 => Plate(slot, "員工名牌 2", includeValid: false),
+        LabelTemplateSlot.MemberNameplate1 => Plate(slot, "會員名牌 1", includeValid: true),
+        LabelTemplateSlot.MemberNameplate2 => Plate(slot, "會員名牌 2", includeValid: true),
+        LabelTemplateSlot.MemberNameplate3 => Plate(slot, "會員名牌 3", includeValid: true),
         _ => throw new ArgumentOutOfRangeException(nameof(slot))
     };
 
-    private static TemplateDocument Employee(LabelTemplateSlot slot, string name, bool includeEnglish)
+    private static TemplateDocument Plate(LabelTemplateSlot slot, string name, bool includeValid)
     {
         var fields = new List<TemplateField>
         {
-            Field("Name", NameplateFields.EmpName, 4, includeEnglish ? 6 : 8, 67, includeEnglish ? 12 : 14, includeEnglish ? 14 : 16, true)
+            Field("MemID", NameplateFields.MemID, 6, 8, 74, 8, 11, true),
+            Field("MemName", NameplateFields.MemName, 6, 18, 74, 12, includeValid ? 16 : 14, true)
         };
-        if (includeEnglish)
-            fields.Add(Field("English", NameplateFields.EmpEnglishName, 4, 22, 67, 6, 9, false));
-        fields.Add(Field("StaffNo", NameplateFields.StaffNo, 4, includeEnglish ? 30 : 24, 67, 8, 11, false));
-        return Document(slot, name, 75, 40, fields);
-    }
-
-    private static TemplateDocument Member(LabelTemplateSlot slot, string name, bool includeValidity, bool includeCard)
-    {
-        var fields = new List<TemplateField>
-        {
-            Field("Name", NameplateFields.LeagName, 6, 14, 74, 14, 18, true),
-            Field("Number", NameplateFields.LeagNo, 6, 30, 74, 8, 12, false)
-        };
-        if (includeCard)
-            fields.Add(Field("Card", NameplateFields.CardNo, 6, 38, 74, 6, 9, false));
-        if (includeValidity)
-            fields.Add(Field("Valid", NameplateFields.ValidDate, 6, includeCard ? 46 : 40, 74, 6, 9, false));
-        return Document(slot, name, 86, 54, fields);
+        if (includeValid)
+            fields.Add(Field("ValidDate", NameplateFields.ValidDate, 6, 34, 74, 8, 11, true));
+        var wide = slot.IsEmployee() ? 75d : 86d;
+        var high = slot.IsEmployee() ? 40d : 54d;
+        return Document(slot, name, wide, high, fields);
     }
 
     private static TemplateDocument Document(

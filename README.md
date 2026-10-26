@@ -1,8 +1,8 @@
 # LabelPrint 1.06
 
-.NET 8 Windows Forms rebuild of Jumping Gym's VB6 LabelPrint 1.06 desk application. It prints employee and member nameplates, reads and writes SLE4442/SLE4428 member cards through `IC_D600.dll`, and looks up MIS SQL Server. The connection string and card PIN come from configuration. They are not in source.
+.NET 8 Windows Forms rebuild of Jumping Gym LabelPrint 1.6 (`CardPrint4.vbp`, `ExeName32=LabelPrint.exe`). The startup form is `frmMemberCard` (caption 會員卡Label列印系統 V1.6). Employee badges are the same form, under 員工 - 工作証. Captions are the Traditional Chinese strings from the `.frm` files (Big5).
 
-The desk UI (forms, menus, buttons, status text, and message boxes) is Traditional Chinese (Hong Kong, zh-Hant-HK). Control names in code stay English. The only caption recovered from the VB6 ASCII strings was `Member Name` (`lblMemName` / `lblMemName2`), shown as 會員姓名. Other captions use Hong Kong wording for the same controls (列印, 儲存, 設定, 檔案, 結束).
+Member cards are read, not written. The card id is 5 bytes at offset 248 (`IC_Read_Hex` on RD600P, APDU `FF B0 00 F8 05` on ACR38U). SQL and the card PIN come from configuration. The VB6 modules contained a staff-database login; that password is not in this repository.
 
 The original binary is PE32 x86 (`MSVBVM60`), SHA256 `55e056f67fa784fb76e9e90b371f3712daa22c276ca8977e58b67068aa5fcd75`. No `.vbp` / `.frm` source was available, so behaviour is reconstructed from the form and control names, the template file names, and the MIS tables named in that binary. Hardware calls and the legacy `.lbl` binary format still need a pass on a desk PC. Those spots are marked `TODO(on-machine)`.
 
@@ -85,18 +85,18 @@ Known columns are queried with parameters. Names that come from config are restr
 | `MtUser:Table` | `MT_USER` | employee table |
 | `MtUser:StaffNumberColumn` | `MU_StaffNo` | `txtStaffNo` |
 | `MtUser:EnglishNameColumn` | `MU_Name` | English name |
-| `MtUser:ChineseNameColumn` | `MU_CHIName` | printed name when present |
-| `MtUser:IdColumn` | `MU_ID` | loaded for templates, not shown on the form |
+| `MtUser:ChineseNameColumn` | `MU_CHIName` | selected, not printed |
+| `MtUser:IdColumn` | `MU_ID` | card-back number typed into 卡號碼 |
+| `MtUser:EnableColumn` | `mu_enable` | must be 1 |
+| `MtUser:EntryDateColumn` | `mu_entryDate` | newest row wins |
+| `Leager:CardNoColumn` | `CardNo` | IC id from offset 248 |
+| `Leager:NetFlagColumn` | `netflag` | count requires `'Y'` |
 
-Dates from SQL `datetime` columns print as `yyyy-MM-dd`. The operator can edit the text before printing.
+The label query uses `CONVERT(varchar(10), validdate, 111)` (`yyyy/mm/dd`). The printed valid date is the first four characters, except Good Luck 卡 which prints 2020年1月12日.
 
-### Card memory
+### Card id
 
-`LabelPrint:Card:MemberNumberOffset` (default 32) and `MemberNumberLength` (default 16) are ASCII, NUL-padded. **These offsets are not from a captured Jumping Gym card.** Dump a spare card with Member card → Dump main memory and correct the offset before writing.
-
-`LabelPrint:Card:Exports` lists the assumed `IC_D600.dll` export names. Replace any name that `dumpbin /exports IC_D600.dll` does not show.
-
-`InitReturnsHandle` (default true) treats a negative `IC_InitComm` result as failure and any other result as the handle. `CheckCardPresentCode` and `IoSuccessCode` default to 0.
+`frmMemberCard` reads 5 bytes at offset 248 and treats `FFFFFFFFFF` as no card. RD600P calls `IC_InitComm(101)`, `IC_Status`, `IC_InitType(icdev, 16)`, `IC_ReadCount_SLE4442`, then `IC_Read_Hex`. It does not send a PIN. ACR38U sends APDU `FF B0 00 F8 05` to `ACS CCID USB Reader 0`.
 
 ## Native DLLs
 
@@ -104,12 +104,12 @@ Copy these beside `LabelPrint.exe`. They are not in this repo.
 
 | File | Role |
 | --- | --- |
-| `IC_D600.dll` | SLE4428/4442 calls used by the VB6 app |
-| `acsr2032.dll` | ACS 32-bit helper. Preloaded when it sits beside the exe |
+| `IC_D600.dll` | RD600P declares in `IC_D600.bas` |
+| `acsr2032.dll` | ACR30U (`ACSR2032.DLL` in the VB6 module). Preloaded when it sits beside the exe |
 
-The P/Invoke layer loads both by full path from the exe directory (not the process current directory). Assumed calling convention is StdCall. Assumed widths match VB6: `Integer` is 16-bit (port, offset, length, type) and `Long` is 32-bit (the reader handle). A wrong signature can crash the process. Use Settings → Reader model → Probe on a spare reader before Read, and Read before Write.
+The P/Invoke layer loads both by full path from the exe directory. Calling convention is StdCall. `IC_InitComm` returns a VB6 `Long` (32-bit handle). The other listed calls return `Integer` (16-bit). A wrong DLL can still crash the process.
 
-PC/SC (`winscard`) fills the reader-model list with live names such as `ACS CCID USB Reader 0`. The known ACS CCID models are also listed. Port `100` is the usual USB port number for this kind of DLL and is unconfirmed here. `CardReader.config` stores model, port, card type, and an optional `InitType`. A per-user copy under `%LocalAppData%\LabelPrint\CardReader.config` wins over the file beside the exe. If the exe directory is not writable, Save falls back to that user file.
+`CardReader.config` is the model name only. A per-user copy under `%LocalAppData%\LabelPrint\CardReader.config` wins over the file beside the exe. If the exe directory is not writable, Save falls back to that user file. The file refuses a password entry.
 
 ## Templates
 
@@ -117,38 +117,57 @@ Shipped files in `templates\` are text layouts (`Format=LabelPrint.TextLayout.v1
 
 | File | Use |
 | --- | --- |
-| `Empnameplate1.lbl` | Employee name and staff number |
-| `Empnameplate2.lbl` | Employee name, English name, staff number |
-| `nameplate1.lbl` | Member name and number |
-| `nameplate2.lbl` | Member name, number, valid date |
-| `nameplate3.lbl` | Member name, number, card, member code, valid date |
+| `Empnameplate1.lbl` / `Empnameplate2.lbl` | `MemID` = staff number, `MemName` = English name. Chosen by name length |
+| `nameplate1.lbl` / `nameplate2.lbl` | `MemID` = `oldcardno`, `MemName`, `ValidDate` = year. Chosen by name length |
+| `nameplate3.lbl` | Good Luck 卡 |
 
-Field `Source` is one of: `StaffNo`, `EmpName`, `EmpEnglishName`, `EmpChineseName`, `EmpId`, `LeagNo`, `LeagName`, `OldCardNo`, `CardNo`, `MemberCode`, `ValidDate`, `TempMember`. Positions are millimetres. `Background=file.jpg` is drawn under the text; a relative path is next to the `.lbl`.
+`Source` may also be `StaffNo`, `EmpName`, `LeagNo`, `LeagName`, `CardNo`, `MemberCode`, and the other names in `NameplateFields`. The BrssCom names are `MemID`, `MemName`, and `ValidDate`.
 
-The loader also accepts a `.lbl` that is really a JPEG, PNG, BMP, or GIF, and paints the built-in text positions on top. Anything else is reported as an unrecognized legacy binary and the print path asks before using the built-in layout. Search order is the configured template directory, the exe directory, then `templates\`.
+The loader accepts a JPEG, PNG, BMP, or GIF `.lbl` and paints the built-in text on top. An OLE compound file (the real BrssCom template) is reported and the print path asks before using the built-in layout. Search order is the configured template directory, the exe directory, then `templates\`.
 
 Paper size sent to the printer is the template size in millimetres, with zero margins. Preview is on the form so a layout can be checked without feeding a label.
+
+## What the VB6 source actually does
+
+`CardPrint4.vbp` starts `frmMemberCard`. The menu is a single item, 選擇讀卡器, which opens `frmReaderModel` (caption still says V1.0). `CardReader.config` is one token: `ACR30U`, `ACR38U`, or `RD600P` (the shipped file is `RD600P`).
+
+| Mode | Behaviour |
+| --- | --- |
+| 一般會員 | Read the card, map `CardNo` to `leag_no`, show `oldcardno` / `leag_name` / `validdate` |
+| 試玩會員 | Type number, name, and `20__-12-31`. No card read |
+| 員工 - 工作証 | Numeric card-back number → `MT_USER.MU_ID` where `mu_enable = 1`. Prints `MU_StaffNo` and English `MU_Name` |
+| Good Luck 卡 | Same read as 一般會員. Preview says 有效期至 / 2020年1月12日. Template is `nameplate3.lbl` |
+
+A name shorter than 15 characters uses `nameplate1.lbl` or `Empnameplate1.lbl`. A longer name uses `nameplate2.lbl` or `Empnameplate2.lbl`. Print goes through `BrssCom.Document` and sets `MemID`, `MemName`, and (for members) `ValidDate`. Crystal Reports (`mcReportPrint`) is referenced by the project and is commented out of the print button.
+
+If `leager` has no `netflag = 'Y'` row for that `CardNo`, the VB6 app runs `EXECUTE net_c_interface` once and shows 會員正在過場. A 5-second timer then reads the card again. This program does the same, with parameters instead of concatenated SQL.
+
+Member SQL uses `ConnectionStrings:Shiyu` when that value is set, otherwise `ConnectionStrings:Mis`. Employee SQL uses `Mis`. Both stay empty in `appsettings.json`.
 
 ## Legacy form mapping
 
 | VB6 | This app |
 | --- | --- |
-| `Form1` | `MainForm` — employee nameplate, member nameplate, status bar |
-| `frmMemberCard` + `modMemberCard` | `MemberCardForm`, `CardReaderService`, `CardCodec` |
+| `frmMemberCard` | `MainForm` |
 | `frmReaderModel` | `ReaderModelForm` |
-| `mnuReaderModel`, `cboReaderModel` | 設定 → 讀卡機型號, model combo |
-| `txtStaffNo`, `txtEmpName`, `cmdGetEmp`, `cmdPrintEmp` | Employee group |
-| `txtLeag_No`, `txtLeag_Name`, `txtCardNo`, `txtMemberCode`, `txtValiddate`, `txtTempMem` | Member group and Member card |
-| `optMember` | `nameplate1.lbl` / `nameplate2.lbl` / `nameplate3.lbl` |
-| `picLabel1`, `picLabel2`, `lblMemName`, `lblMemName2` | The two member previews |
-| `cmdPrint`, `cmdRead` | 列印會員, 讀卡 |
-| `MSComctlLib.StatusBar` | Status strip: message, MIS, reader, templates |
-| `CardReader.config` | Same file name |
-| `Empnameplate1.lbl`, `Empnameplate2.lbl`, `nameplate1.lbl`, `nameplate2.lbl`, `nameplate3.lbl` | Same file names |
+| `optMember(0..3)` | 一般會員, 試玩會員, 員工 - 工作証, Good Luck 卡 |
+| `cmdRead` | Button caption ＩＣ咭編號： |
+| `txtCardNo`, `txtMemberCode`, `txtLeag_Name`, `txtValiddate` | Labels filled from the card and `leager` |
+| `txtTempMem(0..2)` | Trial member number, name, date |
+| `txtCardNum`, `cmdGetEmp`, `txtStaffNo`, `txtEmpName` | Employee card-back lookup |
+| `picLabel1`, `picLabel2` | Short-name and long-name preview |
+| `StatusBar1` | 分店, database name, reader status, 讀卡器型號 |
+| `BrssCom.Document` | Text `.lbl` stand-in, or built-in layout with the same three fields |
 
-`Label1`–`Label5` in the VB6 form were unnamed captions. This form shows 員工編號, 員工姓名, 會員編號, 會員姓名, and the other field captions in Traditional Chinese. The string list did not include a member lookup button; **查詢** next to the member number is that action (`cmdGetMem`). `txtCardNo` / `txtCardNum` are one card-number box. `MU_ID` is available to a template as `EmpId` and is not shown, because the old form had no such box.
+## Remaining gaps
 
-Enter in the staff-number or member-number box runs 查詢. Lookup by number is exact. If the number box is empty, 查詢 searches by name (employees: English or Chinese) or, for members, by card number when that box is the one filled in.
+- **BrssCom.Document.** The gym `.lbl` files are OLE compound documents. This program cannot call `BrssCom.Document.Open` / `SetText` / `DoPrint` until that COM server is registered on the desk PC. A real `.lbl` beside the exe is detected and the print path asks before using the built-in `MemID` / `MemName` / `ValidDate` layout. The files under `templates\` are editable text stand-ins.
+- **Crystal Reports.** `craxdrt.dll` is referenced and `mcReportPrint` still exists, but the print button does not call it. Not ported.
+- **ACR30U.** Needs `ACSR2032.DLL` (`AC_Open`, `AC_StartSession`, read at 248). The desk shows the VB6 failure text plus a TODO. RD600P (`IC_InitComm(101)`, `IC_InitType 16`, `IC_Read_Hex`) and ACR38U (`ACS CCID USB Reader 0`) are implemented and still need a reader.
+- **Reader photos** stored in `frmReaderModel.frx` are not in the picker.
+- The VB6 reader-open failure runs `End` and quits the process. This program leaves the window open.
+- `IC_D600` integer widths follow the `.bas` declares. A wrong DLL build can still crash the process. Probe on a spare reader before a live card.
+- Confirm `net_c_interface` on the branch database before relying on 會員正在過場. It is a stored-procedure call, not a read.
 
 ## Projects
 
@@ -163,14 +182,6 @@ Enter in the staff-number or member-number box runs 查詢. Lookup by number is 
 
 Log file: `%LocalAppData%\LabelPrint\logs\labelprint.log`.
 
-## On-machine follow-up
+## On-machine follow-up (still open)
 
-Search the repo for `TODO(on-machine)`.
-
-1. `dumpbin /exports IC_D600.dll` and correct `LabelPrint:Card:Exports`. Confirm StdCall and the 16-bit versus 32-bit integer widths in `IcD600Gateway`. A mismatch can take the process down on the first native call.
-2. Probe the ACS reader, then read a spare card. Map vendor return codes (`IoSuccessCode`, `CheckCardPresentCode`, `InitReturnsHandle`, port number, `InitType`).
-3. Dump main memory and set `MemberNumberOffset` / `MemberNumberLength` from a real card before Write. Confirm whether the PIN is required to read.
-4. Replace the text `.lbl` files with the gym's `Empnameplate*.lbl` and `nameplate*.lbl` if those are still the binary/artwork the VB6 app printed. Decode that format, or point `Background` at artwork exported from the old exe (the binary contained Photoshop JPEGs on the picture boxes).
-5. Calibrate millimetre positions and the printer's paper size against the label stock. Many label drivers ignore a custom paper size.
-6. Confirm `leager` column names for member code and temp member, then set `MemberCodeColumn` and `TempMemberColumn`.
-7. Rotate the SQL password that was embedded in the VB6 exe. This application does not contain it.
+Search the repo for `TODO(on-machine)`. The gaps that still need the desk PC are listed above: BrssCom, Crystal Reports (unused by the live button), ACR30U, and a live RD600P / ACR38U read. Calibrate paper size against the label stock. Rotate the staff SQL password that was in the VB6 module; it was not copied here.

@@ -66,6 +66,60 @@ public static class LeagerQueries
     private static string Column(string name, string alias, string role) =>
         $"{Sql.Bracket(name, role)} AS [{alias}]";
 
+    public static ParameterizedQuery CountActiveByCard(LeagerTableOptions options, string cardNo)
+    {
+        var key = Require(cardNo, 64, "卡號");
+        var sql = $"""
+            SELECT COUNT(*)
+            FROM {Sql.BracketQualified(options.Table, "leager 資料表")}
+            WHERE {Sql.Bracket(options.NetFlagColumn, "netflag")} = 'Y'
+              AND {Sql.Bracket(options.CardNoColumn, "CardNo")} = @card
+            """;
+        return new ParameterizedQuery(sql, [Text("@card", 64, key)]);
+    }
+
+    public static ParameterizedQuery FindNumberByCard(LeagerTableOptions options, string cardNo)
+    {
+        var key = Require(cardNo, 64, "卡號");
+        var sql = $"""
+            SELECT TOP (1) {Sql.Bracket(options.NumberColumn, "leager 編號")} AS [Number]
+            FROM {Sql.BracketQualified(options.Table, "leager 資料表")}
+            WHERE {Sql.Bracket(options.CardNoColumn, "CardNo")} = @card
+            """;
+        return new ParameterizedQuery(sql, [Text("@card", 64, key)]);
+    }
+
+    public static ParameterizedQuery FindLabelByNumber(LeagerTableOptions options, string leagNo)
+    {
+        var key = Require(leagNo, 64, "會員編號");
+        var sql = $"""
+            SELECT TOP (1)
+                {Sql.Bracket(options.NumberColumn, "leager 編號")} AS [Number],
+                {Sql.Bracket(options.NameColumn, "leager 姓名")} AS [Name],
+                {Sql.Bracket(options.OldCardNumberColumn, "舊卡號")} AS [OldCardNumber],
+                CONVERT(varchar(10), {Sql.Bracket(options.ValidDateColumn, "有效日期")}, 111) AS [ValidDate]
+            FROM {Sql.BracketQualified(options.Table, "leager 資料表")}
+            WHERE {Sql.Bracket(options.NumberColumn, "leager 編號")} = @leagNo
+            """;
+        return new ParameterizedQuery(sql, [Text("@leagNo", 64, key)]);
+    }
+
+    public static ParameterizedQuery RequestTransfer(string cardNo)
+    {
+        var key = Require(cardNo, 64, "卡號");
+        const string sql = """
+            EXECUTE net_c_interface @card, @empty1, @empty2, @action, @note
+            """;
+        return new ParameterizedQuery(sql,
+        [
+            Text("@card", 64, key),
+            Text("@empty1", 1, ""),
+            Text("@empty2", 1, ""),
+            Text("@action", 4, "A"),
+            Text("@note", 40, "Move by Card Print")
+        ]);
+    }
+
     private static QueryParameter Text(string name, int size, string value) =>
         new(name, SqlDbType.NVarChar, size, value);
 

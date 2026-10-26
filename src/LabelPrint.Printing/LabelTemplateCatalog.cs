@@ -90,6 +90,18 @@ public sealed class LabelTemplateCatalog : ILabelTemplateCatalog
             };
         }
 
+        if (IsOleCompound(bytes))
+        {
+            return new TemplateLoadResult
+            {
+                Slot = slot,
+                FileName = fileName,
+                ResolvedPath = path,
+                Status = TemplateLoadStatus.UnrecognizedBinary,
+                Message = $"TODO(on-machine): {fileName} 是 BrssCom.Document 標籤（OLE）。VB6 填入 MemID、MemName、ValidDate 後 DoPrint。此程式未註冊 BrssCom，列印會改用內建版面。"
+            };
+        }
+
         if (!LooksLikeTextLayout(bytes))
         {
             return new TemplateLoadResult
@@ -170,6 +182,9 @@ public sealed class LabelTemplateCatalog : ILabelTemplateCatalog
             return Encoding.BigEndianUnicode.GetString(bytes);
         return Encoding.UTF8.GetString(bytes);
     }
+
+    private static bool IsOleCompound(ReadOnlySpan<byte> data) =>
+        data.Length >= 4 && data[0] == 0xD0 && data[1] == 0xCF && data[2] == 0x11 && data[3] == 0xE0;
 
     private static bool TryImage(ReadOnlySpan<byte> data, out string kind)
     {

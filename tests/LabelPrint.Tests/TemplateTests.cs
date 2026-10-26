@@ -3,11 +3,11 @@ namespace LabelPrint.Tests;
 public class TemplateTests
 {
     [Theory]
-    [InlineData("Empnameplate1.lbl", "EmpName")]
-    [InlineData("Empnameplate2.lbl", "EmpEnglishName")]
-    [InlineData("nameplate1.lbl", "LeagName")]
-    [InlineData("nameplate2.lbl", "ValidDate")]
-    [InlineData("nameplate3.lbl", "CardNo")]
+        [InlineData("Empnameplate1.lbl", "MemID")]
+        [InlineData("Empnameplate2.lbl", "MemName")]
+        [InlineData("nameplate1.lbl", "MemName")]
+        [InlineData("nameplate2.lbl", "ValidDate")]
+        [InlineData("nameplate3.lbl", "MemID")]
     public void Shipped_templates_parse(string fileName, string source)
     {
         var path = Path.Combine(AppContext.BaseDirectory, "templates", fileName);
@@ -98,7 +98,7 @@ public class TemplateTests
 
             Assert.Equal(TemplateLoadStatus.Loaded, result.Status);
             Assert.Equal(Path.Combine(root.FullName, "nameplate2.lbl"), result.Document?.BackgroundPath);
-            Assert.Contains(result.Document!.Fields, field => field.Source == NameplateFields.LeagName);
+            Assert.Contains(result.Document!.Fields, field => field.Source == NameplateFields.MemName);
             Assert.Contains("TODO(on-machine)", result.Message);
         }
         finally
@@ -125,7 +125,7 @@ public class TemplateTests
             Assert.Equal("Chan", loaded.Binding.Get(NameplateFields.EmpName));
             Assert.True(missing.UsedFallbackLayout);
             Assert.Equal("員工名牌 2", missing.Layout.Name);
-            Assert.Contains(missing.Layout.Fields, field => field.Source == NameplateFields.EmpName);
+            Assert.Contains(missing.Layout.Fields, field => field.Source == NameplateFields.MemName);
         }
         finally
         {

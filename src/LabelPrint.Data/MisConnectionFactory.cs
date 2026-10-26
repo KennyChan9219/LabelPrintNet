@@ -25,6 +25,33 @@ public sealed class MisConnectionFactory
         return new SqlConnection(_options.Value.Mis.Trim());
     }
 
+    /// <summary>Member database. Uses <c>ConnectionStrings:Shiyu</c> when it is set, otherwise <c>Mis</c>.</summary>
+    public SqlConnection CreateMemberConnection()
+    {
+        var shiyu = _options.Value.Shiyu?.Trim() ?? "";
+        if (shiyu.Length == 0)
+            return CreateConnection();
+
+        var problem = Explain(shiyu);
+        if (problem is not null)
+            throw new MisNotConfiguredException(problem);
+
+        return new SqlConnection(shiyu);
+    }
+
+    public string MemberDatabaseLabel
+    {
+        get
+        {
+            var shiyu = _options.Value.Shiyu?.Trim() ?? "";
+            var value = shiyu.Length == 0 ? _options.Value.Mis?.Trim() ?? "" : shiyu;
+            if (Explain(value) is not null)
+                return "未設定";
+
+            return ReadDatabase(value);
+        }
+    }
+
     public async Task CanConnectAsync(CancellationToken cancellationToken = default)
     {
         await using var connection = CreateConnection();
@@ -35,12 +62,13 @@ public sealed class MisConnectionFactory
         _ = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private string? TryExplain()
+    private string? TryExplain() => Explain(_options.Value.Mis?.Trim() ?? "");
+
+    private static string? Explain(string value)
     {
-        var value = _options.Value.Mis?.Trim() ?? "";
         if (value.Length == 0)
         {
-            return "尚未設定 MIS SQL 連線。請用 user secrets、執行檔旁邊的 appsettings.Local.json，或環境變數 ConnectionStrings__Mis 設定 ConnectionStrings:Mis。";
+            return "尚未設定 MIS SQL 連線。請用 user secrets、執行檔旁邊的 appsettings.Local.json，或環境變數 ConnectionStrings__Mis 設定 ConnectionStrings:Mis。會員資料可另設 ConnectionStrings:Shiyu。";
         }
 
         foreach (var placeholder in Placeholders)
@@ -52,5 +80,18 @@ public sealed class MisConnectionFactory
         }
 
         return null;
+    }
+
+    internal static string ReadDatabase(string connectionString)
+    {
+        try
+        {
+            var builder = new SqlConnectionStringBuilder(connectionString);
+            return builder.InitialCatalog ?? "";
+        }
+        catch (ArgumentException)
+        {
+            return "";
+        }
     }
 }

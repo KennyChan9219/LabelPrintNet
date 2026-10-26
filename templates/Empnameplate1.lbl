@@ -1,29 +1,29 @@
-; Employee badge. Edit positions in millimetres. This text format is the maintained layout.
-; A legacy binary .lbl dropped beside the exe is detected and reported until it can be decoded.
+; Text stand-in for the BrssCom Empnameplate1.lbl. The gym file is an OLE compound document.
+; Fields match DoPrintEmp: MemID = staff number, MemName = English name.
 Format=LabelPrint.TextLayout.v1
 Name=員工名牌 1
 WidthMm=75
 HeightMm=40
 Copies=1
 
-[Field.Name]
-Source=EmpName
+[Field.MemID]
+Source=MemID
 Xmm=4
 Ymm=8
-WidthMm=67
-HeightMm=14
-Font=Arial
-SizePt=16
-Bold=true
-Align=Center
-
-[Field.StaffNo]
-Source=StaffNo
-Xmm=4
-Ymm=24
 WidthMm=67
 HeightMm=8
 Font=Arial
 SizePt=11
-Bold=false
+Bold=true
+Align=Center
+
+[Field.MemName]
+Source=MemName
+Xmm=4
+Ymm=18
+WidthMm=67
+HeightMm=12
+Font=Arial
+SizePt=14
+Bold=true
 Align=Center

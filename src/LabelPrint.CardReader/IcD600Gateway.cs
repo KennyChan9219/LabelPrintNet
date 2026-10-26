@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Text;
 
 namespace LabelPrint.CardReader;
 
@@ -10,6 +11,8 @@ internal sealed class CardIoRequest
     public required CardOptions Access { get; init; }
 
     public required string BaseDirectory { get; init; }
+
+    public string OpenFailedMessage { get; init; } = "ＩＣ咭座啟動失敗!";
 }
 
 internal static class CardReaderFiles
@@ -27,6 +30,12 @@ internal static class CardReaderFiles
 [SupportedOSPlatform("windows")]
 internal static class IcD600Gateway
 {
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    private delegate int InitCommLongDelegate(short port);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+    private delegate short ReadHexDelegate(int icdev, short offset, short length, StringBuilder buffer);
+
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate short InitCommDelegate(short port);
 
@@ -84,6 +93,80 @@ internal static class IcD600Gateway
         };
     }
 
+    /// <summary>
+    /// RD600P sequence from frmMemberCard: IC_InitComm(101), IC_Status, IC_InitType(16),
+    /// IC_ReadCount_SLE4442, IC_Read_Hex(248, 5). No PIN and no IC_Choose call.
+    /// </summary>
+    public static CardIdRead ReadRd600P(CardIoRequest request)
+    {
+        var libraryPath = Path.Combine(request.BaseDirectory, CardReaderFiles.LibraryFileName);
+        if (!File.Exists(libraryPath))
+            throw new CardReaderException($"在 {libraryPath} 找不到 IC_D600.dll。");
+
+        var dependency = IntPtr.Zero;
+        var library = IntPtr.Zero;
+        var opened = false;
+        var handle = 0;
+        ExitCommDelegate? exit = null;
+        try
+        {
+            var dependencyPath = Path.Combine(request.BaseDirectory, CardReaderFiles.DependencyFileName);
+            if (File.Exists(dependencyPath))
+                dependency = WindowsNative.LoadOrThrow(dependencyPath);
+
+            library = WindowsNative.LoadOrThrow(libraryPath);
+            var init = Bind<InitCommLongDelegate>(library, "IC_InitComm");
+            exit = Bind<ExitCommDelegate>(library, "IC_ExitComm");
+            handle = init(checked((short)request.Settings.Port));
+            opened = true;
+            if (handle <= 0)
+                throw new CardReaderException(request.OpenFailedMessage);
+
+            var status = Bind<HandleOnlyDelegate>(library, "IC_Status");
+            if (status(handle) < 0)
+                throw new CardReaderException(request.OpenFailedMessage);
+
+            var initType = Bind<InitTypeDelegate>(library, "IC_InitType");
+            if (initType(handle, 16) != 0)
+                return CardIdRead.Absent();
+
+            var count = Bind<HandleOnlyDelegate>(library, "IC_ReadCount_SLE4442");
+            if (count(handle) < 0)
+                return CardIdRead.Absent();
+
+            var readHex = Bind<ReadHexDelegate>(library, "IC_Read_Hex");
+            var buffer = new StringBuilder(16);
+            var code = readHex(handle, checked((short)CardCodec.CardIdOffset), checked((short)CardCodec.CardIdLength), buffer);
+            var down = Bind<ExitCommDelegate>(library, "IC_Down");
+            _ = down(handle);
+
+            var text = buffer.ToString().Trim().Trim('\0');
+            if (code != 0 || text.Length == 0 || CardCodec.IsBlankCardId(text))
+                return CardIdRead.Absent();
+
+            return CardIdRead.Present(text);
+        }
+        finally
+        {
+            if (opened && exit is not null)
+            {
+                try
+                {
+                    _ = exit(handle);
+                }
+                catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException)
+                {
+                    // The library is released below even if exit cannot be called.
+                }
+            }
+
+            if (library != IntPtr.Zero)
+                _ = WindowsNative.FreeLibrary(library);
+            if (dependency != IntPtr.Zero)
+                _ = WindowsNative.FreeLibrary(dependency);
+        }
+    }
+
     public static byte[] Read(CardIoRequest request, int offset, int length)
     {
         using var session = Session.Open(request);
@@ -108,6 +191,18 @@ internal static class IcD600Gateway
 
         var duration = (short)Math.Clamp(request.Access.BeepMilliseconds, 1, 500);
         _ = beep(session.Handle, duration);
+    }
+
+    private static T Bind<T>(IntPtr library, string name) where T : Delegate
+    {
+        var pointer = WindowsNative.GetProcAddress(library, name);
+        if (pointer == IntPtr.Zero)
+        {
+            throw new CardReaderException(
+                $"IC_D600.dll 沒有匯出 {name}。請用 dumpbin /exports IC_D600.dll 核對後，更新 LabelPrint:Card:Exports。");
+        }
+
+        return Marshal.GetDelegateForFunctionPointer<T>(pointer);
     }
 
     private sealed class Session : IDisposable

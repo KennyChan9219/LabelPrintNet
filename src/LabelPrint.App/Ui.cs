@@ -8,6 +8,9 @@ internal static class Ui
     public static void Info(IWin32Window owner, string message) =>
         MessageBox.Show(owner, message, "LabelPrint", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+    public static void Warn(IWin32Window owner, string message, string title) =>
+        MessageBox.Show(owner, message, title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
     public static bool Confirm(IWin32Window owner, string message) =>
         MessageBox.Show(owner, message, "LabelPrint", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK;
 }

@@ -33,6 +33,23 @@ public static class MtUserQueries
         ]);
     }
 
+    public static ParameterizedQuery FindByCardId(MtUserTableOptions options, string cardId)
+    {
+        var key = Require(cardId, 64, "卡號碼");
+        var sql = $"""
+            SELECT TOP (1)
+                ISNULL({Sql.Bracket(options.StaffNumberColumn, "員工編號")}, '') AS [StaffNumber],
+                ISNULL({Sql.Bracket(options.EnglishNameColumn, "英文姓名")}, '') AS [EnglishName],
+                ISNULL({Sql.Bracket(options.ChineseNameColumn, "中文姓名")}, '') AS [ChineseName],
+                ISNULL({Sql.Bracket(options.IdColumn, "員工識別")}, '') AS [Id]
+            FROM {Sql.BracketQualified(options.Table, "MT_USER 資料表")}
+            WHERE {Sql.Bracket(options.EnableColumn, "啟用")} = 1
+              AND {Sql.Bracket(options.IdColumn, "員工識別")} = @id
+            ORDER BY {Sql.Bracket(options.EntryDateColumn, "入職日期")} DESC
+            """;
+        return new ParameterizedQuery(sql, [Text("@id", 64, key)]);
+    }
+
     private static string SelectList(MtUserTableOptions options) => string.Join(", ",
     [
         Column(options.StaffNumberColumn, "StaffNumber", "員工編號"),

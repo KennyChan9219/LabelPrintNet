@@ -50,7 +50,6 @@ internal static class Program
             });
             builder.Services.AddSingleton<INameplatePrintPipeline, NameplatePrintPipeline>();
             builder.Services.AddSingleton<ICardReader, CardReaderService>();
-            builder.Services.AddSingleton<DeskSession>();
             builder.Services.AddTransient<MainForm>();
 
             using var host = builder.Build();
@@ -58,7 +57,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "LabelPrint", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(ex.Message, DeskMessages.AppTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }
