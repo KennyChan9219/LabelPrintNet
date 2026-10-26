@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>LabelPrint</RootNamespace>
+    <AssemblyName>LabelPrint.Core</AssemblyName>
+    <Description>Models and ports for the LabelPrint desk application.</Description>
+  </PropertyGroup>
+</Project>

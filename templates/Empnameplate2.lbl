@@ -1,0 +1,27 @@
+Format=LabelPrint.TextLayout.v1
+Name=員工名牌 2
+WidthMm=75
+HeightMm=40
+Copies=1
+
+[Field.MemID]
+Source=MemID
+Xmm=4
+Ymm=6
+WidthMm=67
+HeightMm=8
+Font=Arial
+SizePt=11
+Bold=true
+Align=Center
+
+[Field.MemName]
+Source=MemName
+Xmm=4
+Ymm=16
+WidthMm=67
+HeightMm=14
+Font=Arial
+SizePt=12
+Bold=true
+Align=Center
